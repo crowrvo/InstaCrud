@@ -1,3 +1,10 @@
 <Solution>
-  <Project Path="InstaCrud.csproj" />
+  <Project Path="InstaCrud.Dapper/InstaCrud.Dapper.csproj" />
+  <Project Path="InstaCrud.EFCore/InstaCrud.EFCore.csproj" />
+  <Project Path="InstaCrud.Kria/InstaCrud.Kria.csproj" />
+  <Project Path="InstaCrud.Sql/InstaCrud.Sql.csproj" />
+  <Project Path="InstaCrud.Tests/InstaCrud.Tests.csproj" />
+  <Project Path="InstaCrud.Abstractions/InstaCrud.Abstractions.csproj" />
+  <Project Path="InstaCrud.AspNetCore/InstaCrud.AspNetCore.csproj" />
+  <Project Path="InstaCrud.Core/InstaCrud.Core.csproj" />
 </Solution>
