@@ -1,4 +1,4 @@
-﻿using InstaCrud.Decorators;
+﻿using InstaCrud.Abstractions.Attributes;
 
 namespace InstaCrud.Tests.Abstractions.Attributes;
 

@@ -1,5 +1,5 @@
-﻿using InstaCrud.Decorators;
-using IgnoreAttribute = InstaCrud.Decorators.IgnoreAttribute;
+﻿using InstaCrud.Abstractions.Attributes;
+using IgnoreAttribute = InstaCrud.Abstractions.Attributes.IgnoreAttribute;
 
 namespace InstaCrud.Tests.Abstractions.Attributes;
 

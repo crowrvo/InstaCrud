@@ -1,4 +1,4 @@
-﻿namespace InstaCrud.Decorators;
+﻿namespace InstaCrud.Abstractions.Attributes;
 
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class CrudAttribute : Attribute {

@@ -1,4 +1,4 @@
-﻿using InstaCrud.Decorators;
+﻿using InstaCrud.Abstractions.Attributes;
 using InstaCrud.Interfaces;
 using System.Reflection;
 

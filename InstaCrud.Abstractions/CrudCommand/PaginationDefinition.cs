@@ -1,4 +1,4 @@
-﻿namespace InstantCrud.Abstractions.CrudCommand;
+﻿namespace InstaCrud.Abstractions.CrudCommand;
 
 public sealed class PaginationDefinition {
     public int Page { get; init; }

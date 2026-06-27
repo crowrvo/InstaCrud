@@ -1,7 +1,7 @@
 ﻿namespace InstaCrud.Handler;
 
+using InstaCrud.Abstractions.Attributes;
 using InstaCrud.Core;
-using InstaCrud.Decorators;
 using InstaCrud.Enums;
 using InstaCrud.Interfaces;
 using System.Linq.Expressions;

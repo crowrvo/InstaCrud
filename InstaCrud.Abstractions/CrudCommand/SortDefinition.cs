@@ -1,4 +1,4 @@
-﻿namespace InstantCrud.Abstractions.CrudCommand;
+﻿namespace InstaCrud.Abstractions.CrudCommand;
 
 public sealed class SortDefinition {
     public required string ColumnName { get; init; }

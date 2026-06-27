@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\InstaCrud.Abstractions\InstaCrud.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>

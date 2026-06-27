@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="Metadata\" />
-    <Folder Include="Interfaces\" />
     <Folder Include="Query Models\" />
   </ItemGroup>
 
