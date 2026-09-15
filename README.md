@@ -1,14 +1,16 @@
-# InstaCrud
+# InstantCrud
 
-InstaCrud é uma biblioteca .NET para criar operações CRUD a partir de uma classe que representa uma tabela do banco de dados.
+InstantCrud é uma biblioteca .NET para criar operações CRUD completas a partir de uma classe que representa uma tabela do banco de dados.
 
-A proposta é manter o modelo de uso simples: descreva a entidade e seus mapeamentos; o InstaCrud descobre os metadados e os entrega a um provider responsável por gerar ou executar as operações de persistência.
+A proposta é direta: depois da configuração da conexão e da infraestrutura, o desenvolvedor cria a classe que representa a tabela e não escreve código CRUD. O InstantCrud descobre os metadados e gera persistência, consultas, filtros, endpoints HTTP e documentação OpenAPI.
 
 > O projeto está em desenvolvimento inicial e ainda não possui uma versão estável publicada.
+>
+> O nome público definido para o produto é **InstantCrud**. Os projetos e namespaces ainda usam `InstaCrud` e serão padronizados antes da primeira versão pública.
 
 ## Objetivo
 
-Reduzir o código repetitivo necessário para expor CRUDs convencionais sem esconder as decisões importantes de persistência.
+Eliminar o código repetitivo necessário para criar e expor CRUDs convencionais sem esconder as decisões importantes de persistência.
 
 ```csharp
 [Crud("usuarios")]
@@ -34,7 +36,24 @@ A partir desse modelo, a biblioteca deverá ser capaz de:
 - construir e armazenar seus metadados;
 - traduzir operações de insert, select, update, patch e delete;
 - delegar a geração ou execução para um provider;
-- opcionalmente publicar essas operações por integrações como ASP.NET Core.
+- gerar consultas filtradas, ordenadas e paginadas;
+- publicar controllers ou endpoints ASP.NET Core automaticamente;
+- incluir operações, contratos e schemas no OpenAPI, prontos para consumo.
+
+O objetivo final é que a classe seja todo o código específico necessário para uma tabela. Insert, select, query filter, update, PUT, PATCH e delete devem ser derivados automaticamente do modelo e de seus atributos.
+
+## O que o InstantCrud não é
+
+InstantCrud **não é um ORM**. Ele não pretende oferecer change tracking, unit of work, lazy loading, migrations, resolução automática de relacionamentos ou um provedor LINQ completo.
+
+Seu núcleo é um **query builder orientado por metadados**: transforma classes e operações conhecidas em comandos seguros e os entrega a um mediador como Dapper, EF Core ou Kria. A camada ASP.NET Core utiliza os mesmos metadados para gerar a superfície HTTP, sem transformar o núcleo em framework web ou ORM.
+
+Essa separação é intencional:
+
+- o modelo descreve tabela, colunas, chaves e restrições de escrita;
+- o query builder cria comandos de banco parametrizados;
+- o provider executa os comandos com a tecnologia escolhida;
+- a extensão ASP.NET Core gera o CRUD HTTP e o OpenAPI.
 
 ## Princípios
 
@@ -43,6 +62,7 @@ A partir desse modelo, a biblioteca deverá ser capaz de:
 - **Núcleo independente:** descoberta e comandos CRUD não dependem de Dapper, EF Core ou frameworks web.
 - **Providers substituíveis:** cada tecnologia de persistência pode implementar os contratos públicos sem contaminar o núcleo.
 - **Adoção incremental:** uma aplicação pode utilizar somente os pacotes necessários.
+- **Zero boilerplate por tabela:** nenhuma classe de repository, service ou controller deve ser obrigatória para o CRUD convencional.
 
 ## Arquitetura
 
@@ -66,6 +86,8 @@ classe anotada
     -> comando CRUD validado
     -> provider selecionado
     -> comando parametrizado / execução
+    -> controllers ou endpoints gerados
+    -> OpenAPI pronto para uso
 ```
 
 ### Extensões e providers
@@ -78,6 +100,44 @@ O contrato `ICrudProvider<TResult>` não pressupõe SQL nem Dapper. O `Core` tra
 - `InstaCrud.Kria` poderá fornecer seu próprio resultado e ciclo de execução quando sua API estiver disponível.
 
 Assim, atributos, registro, regras de campos e criação de comandos são compartilhados. Conexão, transação, materialização e sintaxe específica permanecem isoladas no provider.
+
+### Experiência final desejada
+
+Depois de configurar o provider e a conexão uma única vez, cada tabela deve exigir somente seu modelo:
+
+```csharp
+[Crud("usuarios")]
+[Table("USUARIO")]
+public sealed class Usuario
+{
+    [Key]
+    [DatabaseGenerated]
+    public int Id { get; set; }
+
+    public required string Nome { get; set; }
+}
+```
+
+A visão para a inicialização da aplicação é deliberadamente pequena:
+
+```csharp
+builder.Services.AddInstantCrud(options =>
+    options.UseSqlServer(connectionString));
+
+app.MapInstantCrud();
+```
+
+> `AddInstantCrud` e `MapInstantCrud` representam a API planejada e ainda não estão implementados.
+
+Com isso, o runtime deverá gerar automaticamente:
+
+- `POST /usuarios` para insert;
+- `GET /usuarios` para select, filtros, ordenação e paginação;
+- `GET /usuarios/{id}` para busca por chave;
+- `PUT /usuarios/{id}` para atualização completa;
+- `PATCH /usuarios/{id}` para atualização parcial;
+- `DELETE /usuarios/{id}` para exclusão;
+- schemas, parâmetros, respostas e operações correspondentes no OpenAPI.
 
 SQL Server é o dialeto padrão. Para gerar ou executar SQL Oracle, informe o dialeto explicitamente:
 
@@ -194,9 +254,10 @@ SQL Server e Oracle são os bancos prioritários. Outros bancos deverão receber
 
 ```text
 MVP funcional  [████████████████░░░░] 78%
+Produto final  [███████████░░░░░░░░░] 55%
 ```
 
-Estimativa atualizada em 15 de setembro de 2026. O percentual considera apenas o MVP de persistência; ASP.NET Core, EF Core, Kria e providers futuros não bloqueiam esse marco.
+Estimativa atualizada em 15 de setembro de 2026. O primeiro percentual considera o MVP de persistência. O segundo inclui a geração ASP.NET Core/OpenAPI e a preparação para distribuição. EF Core, Kria e providers futuros não bloqueiam a primeira versão completa baseada em Dapper.
 
 | Área | Peso | Entregue | Situação |
 | --- | ---: | ---: | --- |
@@ -232,7 +293,7 @@ registrar entidade
     -> confirmar commit/rollback
 ```
 
-Integrações com ASP.NET Core, EF Core e Kria serão projetadas depois que esse fluxo estiver estável.
+A geração ASP.NET Core/OpenAPI será o marco seguinte ao MVP de persistência e faz parte do objetivo final do produto. EF Core e Kria continuarão como providers posteriores.
 
 ## Desenvolvimento
 
@@ -264,7 +325,10 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [ ] criar uma aplicação de exemplo reproduzível;
 - [ ] endurecer validações e exceções públicas;
 - [ ] adicionar CI para build e testes;
-- [ ] projetar a integração ASP.NET Core;
+- [ ] padronizar projetos e namespaces com o nome público `InstantCrud`;
+- [ ] implementar registro por DI com `AddInstantCrud`;
+- [ ] gerar controllers ou endpoints CRUD com `MapInstantCrud`;
+- [ ] gerar contratos, parâmetros e respostas no OpenAPI;
 - [ ] avaliar providers adicionais;
 - [ ] definir empacotamento, versionamento e publicação no NuGet.
 
