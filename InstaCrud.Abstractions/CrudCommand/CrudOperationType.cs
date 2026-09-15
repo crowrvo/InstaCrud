@@ -5,5 +5,6 @@ public enum CrudOperationType {
     Update,
     Patch,
     Delete,
-    Select
+    Select,
+    Count
 }

@@ -82,6 +82,69 @@ public sealed class EntityCommandFactory : IEntityCommandFactory {
         };
     }
 
+    public CrudCommandModel CreateSelectByKey<TEntity>(IReadOnlyCollection<object?> keyValues)
+        where TEntity : class {
+        ArgumentNullException.ThrowIfNull(keyValues);
+        CrudEntityDefinition definition = GetDefinitionWithKey<TEntity>();
+
+        if (keyValues.Count != definition.KeyProperties.Count) {
+            throw new ArgumentException(
+                $"A entidade '{typeof(TEntity).Name}' exige {definition.KeyProperties.Count} valor(es) de chave, mas recebeu {keyValues.Count}.",
+                nameof(keyValues));
+        }
+
+        CrudCommandModel select = CreateSelect<TEntity>();
+        CrudPropertyDefinition[] keys = definition.KeyProperties.ToArray();
+        object?[] values = keyValues.ToArray();
+
+        return new CrudCommandModel {
+            OperationType = CrudOperationType.Select,
+            TableName = definition.TableName,
+            Fields = select.Fields,
+            Filters = keys
+                .Select((key, index) => new CrudFilter {
+                    ColumnName = key.ColumnName,
+                    Operator = CrudFilterOperator.Equal,
+                    Value = values[index]
+                })
+                .ToArray()
+        };
+    }
+
+    public CrudCommandModel CreateSelectByKey<TEntity>(
+        IReadOnlyDictionary<string, object?> keyValues)
+        where TEntity : class {
+        ArgumentNullException.ThrowIfNull(keyValues);
+        CrudEntityDefinition definition = GetDefinitionWithKey<TEntity>();
+        var valuesByName = new Dictionary<string, object?>(
+            keyValues,
+            StringComparer.OrdinalIgnoreCase);
+
+        if (valuesByName.Count != definition.KeyProperties.Count ||
+            definition.KeyProperties.Any(x => !valuesByName.ContainsKey(x.PropertyName))) {
+            throw new ArgumentException(
+                $"As chaves informadas não correspondem às propriedades [Key] da entidade '{typeof(TEntity).Name}'.",
+                nameof(keyValues));
+        }
+
+        return CreateSelectByKey<TEntity>(
+            definition.KeyProperties
+                .Select(x => valuesByName[x.PropertyName])
+                .ToArray());
+    }
+
+    public CrudCommandModel CreateCount<TEntity>(CrudQuery<TEntity> query)
+        where TEntity : class {
+        ArgumentNullException.ThrowIfNull(query);
+        CrudCommandModel select = CreateSelect(query);
+
+        return new CrudCommandModel {
+            OperationType = CrudOperationType.Count,
+            TableName = select.TableName,
+            Filters = select.Filters
+        };
+    }
+
     public CrudCommandModel CreateUpdate<TEntity>(TEntity entity)
         where TEntity : class {
         ArgumentNullException.ThrowIfNull(entity);

@@ -34,6 +34,7 @@ public sealed class DapperProvider : ICrudProvider<SqlCommandDefinition> {
         return command.OperationType switch {
             CrudOperationType.Insert => _insert.Build(command),
             CrudOperationType.Select => _select.Build(command),
+            CrudOperationType.Count => _select.Build(command),
             CrudOperationType.Update => _update.Build(command),
             CrudOperationType.Patch => _patch.Build(command),
             CrudOperationType.Delete => _delete.Build(command),

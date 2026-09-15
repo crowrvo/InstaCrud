@@ -137,6 +137,46 @@ public sealed class EntityCommandFactoryTests {
     }
 
     [TestMethod]
+    public void Deve_Criar_Select_Por_Chave() {
+        var command = _factory.CreateSelectByKey<Usuario>([42]);
+
+        Assert.AreEqual(CrudOperationType.Select, command.OperationType);
+        Assert.HasCount(1, command.Filters);
+        Assert.AreEqual("ID", command.Filters.Single().ColumnName);
+        Assert.AreEqual(42, command.Filters.Single().Value);
+    }
+
+    [TestMethod]
+    public void Deve_Validar_Quantidade_De_Chaves_Do_Select() {
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            _factory.CreateSelectByKey<Usuario>(Array.Empty<object?>()));
+    }
+
+    [TestMethod]
+    public void Deve_Criar_Select_Por_Chave_Nomeada() {
+        var command = _factory.CreateSelectByKey<Usuario>(
+            new Dictionary<string, object?> { [nameof(Usuario.Id)] = 42 });
+
+        Assert.AreEqual(42, command.Filters.Single().Value);
+    }
+
+    [TestMethod]
+    public void Deve_Criar_Count_Somente_Com_Filtros() {
+        var query = new CrudQuery<Usuario>()
+            .Where(x => x.Nome, CrudFilterOperator.Like, "Mar%")
+            .OrderBy(x => x.Nome)
+            .Page(1, 10);
+
+        var command = _factory.CreateCount(query);
+
+        Assert.AreEqual(CrudOperationType.Count, command.OperationType);
+        Assert.HasCount(1, command.Filters);
+        Assert.IsEmpty(command.Fields);
+        Assert.IsEmpty(command.Sorts);
+        Assert.IsNull(command.Pagination);
+    }
+
+    [TestMethod]
     public void Deve_Exigir_Chave_Para_Update_E_Delete() {
         var entity = new SemChave { Nome = "teste" };
 

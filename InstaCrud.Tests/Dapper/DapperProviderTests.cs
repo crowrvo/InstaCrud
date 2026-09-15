@@ -157,6 +157,19 @@ public sealed class DapperProviderTests {
         Assert.ThrowsExactly<ArgumentException>(() => _provider.Build(command));
     }
 
+    [TestMethod]
+    public void Deve_Gerar_Count_Com_Filtro() {
+        var command = Command(
+            CrudOperationType.Count,
+            filters: [Filter("ATIVO", CrudFilterOperator.Equal, true)]);
+
+        var result = _provider.Build(command);
+
+        Assert.AreEqual(
+            "SELECT COUNT(1) FROM [dbo].[USUARIO] WHERE [ATIVO] = @p0;",
+            result.Sql);
+    }
+
     private static CrudCommand Command(
         CrudOperationType operation,
         IReadOnlyCollection<CrudField>? fields = null,

@@ -13,6 +13,16 @@ public interface IEntityCommandFactory {
     CrudCommandModel CreateSelect<TEntity>(CrudQuery<TEntity> query)
         where TEntity : class;
 
+    CrudCommandModel CreateSelectByKey<TEntity>(IReadOnlyCollection<object?> keyValues)
+        where TEntity : class;
+
+    CrudCommandModel CreateSelectByKey<TEntity>(
+        IReadOnlyDictionary<string, object?> keyValues)
+        where TEntity : class;
+
+    CrudCommandModel CreateCount<TEntity>(CrudQuery<TEntity> query)
+        where TEntity : class;
+
     CrudCommandModel CreateUpdate<TEntity>(TEntity entity)
         where TEntity : class;
 

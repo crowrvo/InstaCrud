@@ -20,12 +20,13 @@ internal sealed class DapperSql {
 
     public void ValidateOperation(
         CrudCommand command,
-        CrudOperationType expectedOperation) {
+        params CrudOperationType[] expectedOperations) {
         ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(expectedOperations);
 
-        if (command.OperationType != expectedOperation) {
+        if (!expectedOperations.Contains(command.OperationType)) {
             throw new ArgumentException(
-                $"O comando '{command.OperationType}' não pode ser processado como '{expectedOperation}'.",
+                $"O comando '{command.OperationType}' não é aceito por este provider.",
                 nameof(command));
         }
 

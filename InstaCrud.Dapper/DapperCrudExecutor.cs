@@ -136,6 +136,109 @@ public sealed class DapperCrudExecutor {
         return entities.ToArray();
     }
 
+    public Task<TEntity?> FindAsync<TEntity>(
+        object? keyValue,
+        IDbTransaction? transaction = null,
+        int? commandTimeout = null,
+        CancellationToken cancellationToken = default)
+        where TEntity : class =>
+        FindAsync<TEntity>(
+            [keyValue],
+            transaction,
+            commandTimeout,
+            cancellationToken);
+
+    public async Task<TEntity?> FindAsync<TEntity>(
+        IReadOnlyCollection<object?> keyValues,
+        IDbTransaction? transaction = null,
+        int? commandTimeout = null,
+        CancellationToken cancellationToken = default)
+        where TEntity : class {
+        CrudCommandModel command = _commandFactory.CreateSelectByKey<TEntity>(keyValues);
+        SqlCommandDefinition definition = _provider.Build(command);
+
+        return await _connection
+            .QuerySingleOrDefaultAsync<TEntity>(CreateCommand(
+                definition,
+                CreateParameters(definition),
+                transaction,
+                commandTimeout,
+                cancellationToken))
+            .ConfigureAwait(false);
+    }
+
+    public async Task<TEntity?> FindAsync<TEntity>(
+        IReadOnlyDictionary<string, object?> keyValues,
+        IDbTransaction? transaction = null,
+        int? commandTimeout = null,
+        CancellationToken cancellationToken = default)
+        where TEntity : class {
+        CrudCommandModel command = _commandFactory.CreateSelectByKey<TEntity>(keyValues);
+        SqlCommandDefinition definition = _provider.Build(command);
+
+        return await _connection
+            .QuerySingleOrDefaultAsync<TEntity>(CreateCommand(
+                definition,
+                CreateParameters(definition),
+                transaction,
+                commandTimeout,
+                cancellationToken))
+            .ConfigureAwait(false);
+    }
+
+    public async Task<long> CountAsync<TEntity>(
+        CrudQuery<TEntity>? query = null,
+        IDbTransaction? transaction = null,
+        int? commandTimeout = null,
+        CancellationToken cancellationToken = default)
+        where TEntity : class {
+        CrudCommandModel command = _commandFactory.CreateCount(
+            query ?? new CrudQuery<TEntity>());
+        SqlCommandDefinition definition = _provider.Build(command);
+
+        return await _connection
+            .ExecuteScalarAsync<long>(CreateCommand(
+                definition,
+                CreateParameters(definition),
+                transaction,
+                commandTimeout,
+                cancellationToken))
+            .ConfigureAwait(false);
+    }
+
+    public async Task<PagedResult<TEntity>> PageAsync<TEntity>(
+        CrudQuery<TEntity> query,
+        IDbTransaction? transaction = null,
+        int? commandTimeout = null,
+        CancellationToken cancellationToken = default)
+        where TEntity : class {
+        ArgumentNullException.ThrowIfNull(query);
+
+        if (query.Pagination is null) {
+            throw new ArgumentException(
+                "A consulta paginada exige a configuração de Page.",
+                nameof(query));
+        }
+
+        IReadOnlyList<TEntity> items = await SelectAsync(
+            query,
+            transaction,
+            commandTimeout,
+            cancellationToken).ConfigureAwait(false);
+        long total = await CountAsync(
+            query,
+            transaction,
+            commandTimeout,
+            cancellationToken).ConfigureAwait(false);
+
+        return new PagedResult<TEntity> {
+            Items = items,
+            Total = total,
+            Page = query.Pagination.Page,
+            PageSize = query.Pagination.PageSize
+        };
+    }
+
     public Task<int> UpdateAsync<TEntity>(
         TEntity entity,
         IDbTransaction? transaction = null,

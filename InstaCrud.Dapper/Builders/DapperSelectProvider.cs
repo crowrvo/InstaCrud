@@ -14,17 +14,23 @@ public sealed class DapperSelectProvider : ICrudSelectProvider<SqlCommandDefinit
     }
 
     public SqlCommandDefinition Build(CrudCommandModel command) {
-        _sql.ValidateOperation(command, CrudOperationType.Select);
+        _sql.ValidateOperation(command, CrudOperationType.Select, CrudOperationType.Count);
         DapperSql.ValidateDistinctFields(command.Fields);
 
         var parameters = new Dictionary<string, object?>();
         int parameterIndex = 0;
-        string columns = command.Fields.Count == 0
+        string columns = command.OperationType == CrudOperationType.Count
+            ? "COUNT(1)"
+            : command.Fields.Count == 0
             ? "*"
             : string.Join(", ", command.Fields.Select(SelectExpression));
         string where = _sql.Where(command.Filters, parameters, ref parameterIndex);
-        string orderBy = _sql.OrderBy(command.Sorts);
-        string pagination = _sql.Pagination(
+        string orderBy = command.OperationType == CrudOperationType.Count
+            ? string.Empty
+            : _sql.OrderBy(command.Sorts);
+        string pagination = command.OperationType == CrudOperationType.Count
+            ? string.Empty
+            : _sql.Pagination(
             command.Pagination,
             command.Sorts,
             parameters,

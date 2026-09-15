@@ -165,9 +165,26 @@ var query = new CrudQuery<Usuario>()
 
 IReadOnlyList<Usuario> usuariosAtivos =
     await executor.SelectAsync(query, cancellationToken: cancellationToken);
+
+Usuario? usuario = await executor.FindAsync<Usuario>(id);
+long totalAtivos = await executor.CountAsync(query);
+PagedResult<Usuario> pagina = await executor.PageAsync(query);
 ```
 
 As expressões aceitam somente acesso direto a propriedades. O nome informado em `[Column]` é resolvido pelo registro antes de chegar ao provider, impedindo que identificadores SQL arbitrários sejam introduzidos pela consulta.
+
+Chaves compostas podem ser consultadas por um dicionário com os nomes das propriedades `[Key]`, evitando dependência da ordem de declaração:
+
+```csharp
+var chave = new Dictionary<string, object?> {
+    [nameof(ItemPedido.PedidoId)] = pedidoId,
+    [nameof(ItemPedido.ItemId)] = itemId
+};
+
+ItemPedido? item = await executor.FindAsync<ItemPedido>(chave);
+```
+
+`PageAsync` executa a consulta dos itens e a contagem sequencialmente. Quando ambos precisarem enxergar exatamente o mesmo estado do banco, forneça uma transação ao método.
 
 ## Estado do MVP
 
@@ -207,6 +224,7 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [x] executar comandos assíncronos por uma conexão Dapper;
 - [x] isolar as sintaxes SQL Server e Oracle;
 - [x] oferecer consultas tipadas com filtro, projeção, ordenação e paginação;
+- [x] oferecer busca por chave, contagem e resultado paginado;
 - [x] suportar `RETURNING INTO` e chaves geradas no Oracle;
 - [ ] criar testes de integração e aplicação de exemplo;
 - [ ] projetar a integração ASP.NET Core;

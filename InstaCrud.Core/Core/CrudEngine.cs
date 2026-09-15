@@ -30,6 +30,22 @@ public sealed class CrudEngine<TResult> {
         where TEntity : class =>
         _provider.Build(_commandFactory.CreateSelect(query));
 
+    public TResult SelectByKey<TEntity>(params object?[] keyValues)
+        where TEntity : class =>
+        _provider.Build(_commandFactory.CreateSelectByKey<TEntity>(keyValues));
+
+    public TResult SelectByKey<TEntity>(IReadOnlyDictionary<string, object?> keyValues)
+        where TEntity : class =>
+        _provider.Build(_commandFactory.CreateSelectByKey<TEntity>(keyValues));
+
+    public TResult Count<TEntity>()
+        where TEntity : class =>
+        Count(new CrudQuery<TEntity>());
+
+    public TResult Count<TEntity>(CrudQuery<TEntity> query)
+        where TEntity : class =>
+        _provider.Build(_commandFactory.CreateCount(query));
+
     public TResult Update<TEntity>(TEntity entity)
         where TEntity : class =>
         _provider.Build(_commandFactory.CreateUpdate(entity));
