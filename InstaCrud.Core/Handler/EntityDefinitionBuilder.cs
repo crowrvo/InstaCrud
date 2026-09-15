@@ -50,6 +50,7 @@ public sealed class EntityDefinitionBuilder
     private static List<CrudPropertyDefinition> ObterPropriedades(Type entityType) {
         return entityType
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(x => x.GetIndexParameters().Length == 0)
             .Select(CriarPropriedade)
             .ToList();
     }
@@ -98,7 +99,10 @@ public sealed class EntityDefinitionBuilder
         return flags;
     }
 
-    private static Func<object, object?> CriarGetter(PropertyInfo property) {
+    private static Func<object, object?>? CriarGetter(PropertyInfo property) {
+        if (!property.CanRead)
+            return null;
+
         ParameterExpression instance =
             Expression.Parameter(typeof(object));
 

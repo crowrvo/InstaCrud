@@ -34,5 +34,5 @@ public sealed class CrudPropertyDefinition {
         Flags.HasFlag(CrudPropertyFlags.IgnoreUpdate);
 
     public bool IgnorePatch =>
-        Flags.HasFlag(CrudPropertyFlags.IgnorePatch);
+        IgnoreUpdate;
 }

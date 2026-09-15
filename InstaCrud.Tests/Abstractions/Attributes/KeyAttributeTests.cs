@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using InstaCrud.Abstractions.Attributes;
 
 namespace InstaCrud.Tests.Abstractions.Attributes;
 

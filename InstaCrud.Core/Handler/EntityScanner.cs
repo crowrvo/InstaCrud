@@ -12,6 +12,7 @@ public sealed class EntityScanner
             .GetTypes()
             .Where(x =>
                 x.IsClass &&
-                x.GetCustomAttribute<CrudAttribute>() != null);
+                !x.IsAbstract &&
+                x.IsDefined(typeof(CrudAttribute), false));
     }
 }
