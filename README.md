@@ -83,6 +83,38 @@ classe anotada
 
 Sem `[Table]` ou `[Column]`, o nome do tipo ou da propriedade é utilizado.
 
+## Uso atual
+
+O primeiro fluxo funcional gera SQL Server e parâmetros diretamente da entidade:
+
+```csharp
+var crud = DapperCrud.Create<Usuario>();
+
+var usuario = new Usuario {
+    Nome = "Maria",
+    CriadoEm = DateTime.UtcNow
+};
+
+SqlCommandDefinition insert = crud.Insert(usuario);
+
+// insert.Sql:
+// INSERT INTO [USUARIO] ([NOME], [CriadoEm]) VALUES (@p0, @p1);
+
+// O objeto e sua chave também geram update e delete:
+SqlCommandDefinition update = crud.Update(usuario);
+SqlCommandDefinition delete = crud.Delete(usuario);
+
+// Patch recebe os nomes das propriedades permitidas:
+SqlCommandDefinition patch = crud.Patch(usuario, nameof(Usuario.Nome));
+
+// Também é possível registrar várias entidades:
+var applicationCrud = DapperCrud.Create(
+    typeof(Usuario),
+    typeof(Produto));
+```
+
+O resultado contém o SQL e um dicionário de parâmetros compatível com a chamada ao Dapper. A execução da conexão ainda não faz parte desta etapa do MVP.
+
 ## Estado do MVP
 
 O SQL Server é o primeiro dialeto do provider Dapper. Outros bancos deverão receber dialetos ou providers próprios depois que o contrato do MVP estiver estável.
@@ -115,9 +147,10 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 
 ## Roadmap
 
-- [ ] estabilizar os contratos públicos;
-- [ ] concluir o registro e a validação de entidades;
-- [ ] concluir o provider Dapper;
+- [x] estabilizar os contratos públicos iniciais;
+- [x] concluir o registro e a leitura de entidades;
+- [x] gerar comandos SQL Server a partir de entidades;
+- [ ] executar os comandos por uma conexão Dapper;
 - [ ] criar testes de integração e aplicação de exemplo;
 - [ ] projetar a integração ASP.NET Core;
 - [ ] avaliar providers adicionais;

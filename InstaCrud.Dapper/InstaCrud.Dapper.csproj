@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\InstaCrud.Abstractions\InstaCrud.Abstractions.csproj" />
+    <ProjectReference Include="..\InstaCrud.Core\InstaCrud.Core.csproj" />
   </ItemGroup>
 
 </Project>

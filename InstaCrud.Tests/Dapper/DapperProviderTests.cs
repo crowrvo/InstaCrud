@@ -1,4 +1,5 @@
 using InstaCrud.Abstractions.CrudCommand;
+using InstaCrud.Abstractions.Attributes;
 using InstaCrud.Dapper;
 
 namespace InstaCrud.Tests.Dapper;
@@ -6,6 +7,29 @@ namespace InstaCrud.Tests.Dapper;
 [TestClass]
 public sealed class DapperProviderTests {
     private readonly DapperProvider _provider = new();
+
+    [Crud]
+    [Table("CLIENTE")]
+    private sealed class Cliente {
+        [Key]
+        [DatabaseGenerated]
+        public int Id { get; set; }
+
+        [Column("NOME_COMPLETO")]
+        public string Nome { get; set; } = string.Empty;
+    }
+
+    [TestMethod]
+    public void Deve_Gerar_Comando_Diretamente_Da_Entidade() {
+        var crud = DapperCrud.Create<Cliente>();
+
+        var result = crud.Insert(new Cliente { Nome = "Ana" });
+
+        Assert.AreEqual(
+            "INSERT INTO [CLIENTE] ([NOME_COMPLETO]) VALUES (@p0);",
+            result.Sql);
+        Assert.AreEqual("Ana", result.Parameters["p0"]);
+    }
 
     [TestMethod]
     public void Deve_Gerar_Insert_Parametrizado() {
