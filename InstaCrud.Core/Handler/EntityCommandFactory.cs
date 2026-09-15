@@ -26,7 +26,15 @@ public sealed class EntityCommandFactory : IEntityCommandFactory {
                     !x.Ignore &&
                     !x.IgnoreInsert &&
                     !x.IsDatabaseGenerated),
-                entity)
+                entity),
+            ReturningFields = definition.Properties
+                .Where(x => !x.Ignore && x.IsKey && x.IsDatabaseGenerated)
+                .Select(x => new CrudField {
+                    ColumnName = x.ColumnName,
+                    ParameterName = x.PropertyName,
+                    Value = null
+                })
+                .ToArray()
         };
     }
 

@@ -20,9 +20,15 @@ public sealed class DapperInsertProvider : ICrudInsertProvider<SqlCommandDefinit
         string values = string.Join(
             ", ",
             command.Fields.Select(x => DapperSql.AddParameter(parameters, x.Value, ref parameterIndex)));
+        string output = command.ReturningFields.Count == 0
+            ? string.Empty
+            : " OUTPUT " + string.Join(
+                ", ",
+                command.ReturningFields.Select(x =>
+                    $"INSERTED.{DapperSql.Identifier(x.ColumnName)}"));
 
         return new SqlCommandDefinition {
-            Sql = $"INSERT INTO {DapperSql.Identifier(command.TableName)} ({columns}) VALUES ({values});",
+            Sql = $"INSERT INTO {DapperSql.Identifier(command.TableName)} ({columns}){output} VALUES ({values});",
             Parameters = parameters
         };
     }

@@ -8,6 +8,9 @@ public sealed class CrudCommand {
     public IReadOnlyCollection<CrudField> Fields { get; init; }
         = [];
 
+    public IReadOnlyCollection<CrudField> ReturningFields { get; init; }
+        = [];
+
     public IReadOnlyCollection<CrudFilter> Filters { get; init; }
         = [];
 

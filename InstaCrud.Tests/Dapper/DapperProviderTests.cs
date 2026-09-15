@@ -26,9 +26,20 @@ public sealed class DapperProviderTests {
         var result = crud.Insert(new Cliente { Nome = "Ana" });
 
         Assert.AreEqual(
-            "INSERT INTO [CLIENTE] ([NOME_COMPLETO]) VALUES (@p0);",
+            "INSERT INTO [CLIENTE] ([NOME_COMPLETO]) OUTPUT INSERTED.[Id] VALUES (@p0);",
             result.Sql);
         Assert.AreEqual("Ana", result.Parameters["p0"]);
+    }
+
+    [TestMethod]
+    public void Deve_Criar_Alias_De_Coluna_Para_Materializacao() {
+        var crud = DapperCrud.Create<Cliente>();
+
+        var result = crud.Select<Cliente>();
+
+        Assert.AreEqual(
+            "SELECT [Id], [NOME_COMPLETO] AS [Nome] FROM [CLIENTE];",
+            result.Sql);
     }
 
     [TestMethod]

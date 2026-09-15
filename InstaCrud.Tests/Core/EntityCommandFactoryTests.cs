@@ -47,6 +47,7 @@ public sealed class EntityCommandFactoryTests {
         CollectionAssert.AreEqual(
             new[] { "NOME", nameof(Usuario.CriadoEm) },
             command.Fields.Select(x => x.ColumnName).ToArray());
+        Assert.AreEqual("ID", command.ReturningFields.Single().ColumnName);
         Assert.AreEqual("Maria", command.Fields.First().Value);
     }
 
