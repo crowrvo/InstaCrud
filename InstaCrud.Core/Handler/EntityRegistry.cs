@@ -1,5 +1,6 @@
 using InstaCrud.Core;
 using InstaCrud.Interfaces;
+using System.Reflection;
 
 namespace InstaCrud.Handler;
 
@@ -20,6 +21,27 @@ public sealed class EntityRegistry : IEntityRegistry {
     }
 
     public IReadOnlyCollection<CrudEntityDefinition> Entities { get; }
+
+    public static EntityRegistry FromTypes(params Type[] entityTypes) {
+        ArgumentNullException.ThrowIfNull(entityTypes);
+
+        var builder = new EntityDefinitionBuilder();
+        return new EntityRegistry(
+            entityTypes
+                .Distinct()
+                .Select(builder.Build));
+    }
+
+    public static EntityRegistry FromAssemblies(params Assembly[] assemblies) {
+        ArgumentNullException.ThrowIfNull(assemblies);
+
+        var scanner = new EntityScanner();
+        return FromTypes(
+            assemblies
+                .SelectMany(scanner.Scan)
+                .Distinct()
+                .ToArray());
+    }
 
     public CrudEntityDefinition Get(Type type) {
         ArgumentNullException.ThrowIfNull(type);
