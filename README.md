@@ -190,14 +190,47 @@ ItemPedido? item = await executor.FindAsync<ItemPedido>(chave);
 
 SQL Server e Oracle são os bancos prioritários. Outros bancos deverão receber dialetos ou providers próprios depois que esses dois contratos estiverem estáveis.
 
-O primeiro marco funcional terá:
+### Progresso
 
-1. descoberta e registro de entidades;
-2. validação consistente dos metadados;
-3. comandos para as cinco operações CRUD;
-4. geração de SQL parametrizado pelo provider Dapper;
-5. testes unitários da geração e testes de integração;
-6. uma aplicação mínima demonstrando o uso.
+```text
+MVP funcional  [████████████████░░░░] 78%
+```
+
+Estimativa atualizada em 15 de setembro de 2026. O percentual considera apenas o MVP de persistência; ASP.NET Core, EF Core, Kria e providers futuros não bloqueiam esse marco.
+
+| Área | Peso | Entregue | Situação |
+| --- | ---: | ---: | --- |
+| Arquitetura e contratos | 10% | 10% | Concluído |
+| Metadados e registro | 15% | 12% | Faltam validações de borda |
+| Comandos CRUD e consultas | 20% | 20% | Concluído |
+| Dialeto SQL Server | 15% | 12% | Falta validação em banco real |
+| Dialeto Oracle | 15% | 10% | Falta validar tipos e `RETURNING INTO` reais |
+| Execução Dapper | 10% | 8% | Falta endurecer ciclo de conexão e erros |
+| Testes automatizados | 10% | 3% | 48 testes unitários; integração pendente |
+| Documentação e exemplo | 5% | 3% | README pronto; aplicação sample pendente |
+| **Total** | **100%** | **78%** | **MVP avançado, ainda não publicável** |
+
+### O que falta para concluir o MVP
+
+1. Criar testes de integração executados contra SQL Server e Oracle.
+2. Validar insert, identidade, select, update, patch, delete, paginação e rollback nos dois bancos.
+3. Confirmar `RETURNING INTO` com o driver Oracle e os tipos CLR suportados.
+4. Endurecer validações de metadados: nomes duplicados, propriedades ilegíveis, chaves inválidas e rotas conflitantes.
+5. Definir exceções públicas e comportamento quando nenhuma ou múltiplas linhas forem afetadas.
+6. Criar uma aplicação mínima reproduzível com entidades, schema e ciclo CRUD completo.
+
+### Critério de conclusão
+
+O MVP estará concluído quando uma aplicação de exemplo conseguir executar automaticamente o ciclo abaixo em SQL Server e Oracle, com os mesmos modelos e consultas:
+
+```text
+registrar entidade
+    -> inserir e recuperar chave
+    -> buscar e paginar
+    -> atualizar e aplicar patch
+    -> excluir
+    -> confirmar commit/rollback
+```
 
 Integrações com ASP.NET Core, EF Core e Kria serão projetadas depois que esse fluxo estiver estável.
 
@@ -226,7 +259,11 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [x] oferecer consultas tipadas com filtro, projeção, ordenação e paginação;
 - [x] oferecer busca por chave, contagem e resultado paginado;
 - [x] suportar `RETURNING INTO` e chaves geradas no Oracle;
-- [ ] criar testes de integração e aplicação de exemplo;
+- [ ] validar o ciclo CRUD em uma instância SQL Server;
+- [ ] validar o ciclo CRUD em uma instância Oracle;
+- [ ] criar uma aplicação de exemplo reproduzível;
+- [ ] endurecer validações e exceções públicas;
+- [ ] adicionar CI para build e testes;
 - [ ] projetar a integração ASP.NET Core;
 - [ ] avaliar providers adicionais;
 - [ ] definir empacotamento, versionamento e publicação no NuGet.
