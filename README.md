@@ -68,6 +68,17 @@ classe anotada
     -> comando parametrizado / execução
 ```
 
+### Extensões e providers
+
+O contrato `ICrudProvider<TResult>` não pressupõe SQL nem Dapper. O `Core` transforma a entidade em um comando neutro e cada extensão decide como processá-lo:
+
+- `InstaCrud.Dapper` traduz o comando para SQL Server e opcionalmente o executa em uma `IDbConnection`;
+- `InstaCrud.EFCore` poderá aplicar a operação a um `DbContext` sem reutilizar o executor Dapper;
+- `InstaCrud.AspNetCore` poderá localizar um engine registrado e publicar endpoints, sem conhecer detalhes do banco;
+- `InstaCrud.Kria` poderá fornecer seu próprio resultado e ciclo de execução quando sua API estiver disponível.
+
+Assim, atributos, registro, regras de campos e criação de comandos são compartilhados. Conexão, transação, materialização e sintaxe específica permanecem isoladas no provider.
+
 ## Mapeamento
 
 | Atributo | Uso |
@@ -98,7 +109,8 @@ var usuario = new Usuario {
 SqlCommandDefinition insert = crud.Insert(usuario);
 
 // insert.Sql:
-// INSERT INTO [USUARIO] ([NOME], [CriadoEm]) VALUES (@p0, @p1);
+// INSERT INTO [USUARIO] ([NOME], [CriadoEm])
+// OUTPUT INSERTED.[ID] VALUES (@p0, @p1);
 
 // O objeto e sua chave também geram update e delete:
 SqlCommandDefinition update = crud.Update(usuario);
@@ -113,7 +125,22 @@ var applicationCrud = DapperCrud.Create(
     typeof(Produto));
 ```
 
-O resultado contém o SQL e um dicionário de parâmetros compatível com a chamada ao Dapper. A execução da conexão ainda não faz parte desta etapa do MVP.
+O resultado contém o SQL e um dicionário de parâmetros que também podem ser consumidos diretamente pela aplicação.
+
+Para executar diretamente, a aplicação fornece e continua responsável pelo ciclo de vida da conexão:
+
+```csharp
+await using var connection = new SqlConnection(connectionString);
+var executor = DapperCrud.CreateExecutor<Usuario>(connection);
+
+await executor.InsertAsync(usuario, cancellationToken: cancellationToken);
+await executor.UpdateAsync(usuario, cancellationToken: cancellationToken);
+
+IReadOnlyList<Usuario> usuarios =
+    await executor.SelectAsync<Usuario>(cancellationToken: cancellationToken);
+```
+
+Quando a chave possui `[DatabaseGenerated]`, o insert usa `OUTPUT INSERTED` e atribui o valor retornado à entidade. Transações e timeout podem ser informados em cada operação. A biblioteca não abre, fecha nem descarta a conexão recebida.
 
 ## Estado do MVP
 
@@ -150,7 +177,7 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [x] estabilizar os contratos públicos iniciais;
 - [x] concluir o registro e a leitura de entidades;
 - [x] gerar comandos SQL Server a partir de entidades;
-- [ ] executar os comandos por uma conexão Dapper;
+- [x] executar comandos assíncronos por uma conexão Dapper;
 - [ ] criar testes de integração e aplicação de exemplo;
 - [ ] projetar a integração ASP.NET Core;
 - [ ] avaliar providers adicionais;
