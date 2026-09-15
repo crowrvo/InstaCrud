@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\InstaCrud.Abstractions\InstaCrud.Abstractions.csproj" />
     <ProjectReference Include="..\InstaCrud.Core\InstaCrud.Core.csproj" />
+    <ProjectReference Include="..\InstaCrud.Dapper\InstaCrud.Dapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>

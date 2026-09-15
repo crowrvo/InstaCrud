@@ -50,7 +50,7 @@ A partir desse modelo, a biblioteca deverá ser capaz de:
 | --- | --- | --- |
 | `InstaCrud.Abstractions` | Atributos, comandos e contratos públicos | Em desenvolvimento |
 | `InstaCrud.Core` | Descoberta, validação e registro de metadados | Em desenvolvimento |
-| `InstaCrud.Dapper` | Tradução de comandos para SQL parametrizado | Em desenvolvimento |
+| `InstaCrud.Dapper` | Tradução de comandos para SQL Server parametrizado | Em desenvolvimento |
 | `InstaCrud.AspNetCore` | Integração com DI e endpoints HTTP | Planejado |
 | `InstaCrud.EFCore` | Provider para Entity Framework Core | Planejado |
 | `InstaCrud.Sql` | Componentes SQL compartilhados, se necessários | Planejado |
@@ -84,6 +84,8 @@ classe anotada
 Sem `[Table]` ou `[Column]`, o nome do tipo ou da propriedade é utilizado.
 
 ## Estado do MVP
+
+O SQL Server é o primeiro dialeto do provider Dapper. Outros bancos deverão receber dialetos ou providers próprios depois que o contrato do MVP estiver estável.
 
 O primeiro marco funcional terá:
 
