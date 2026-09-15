@@ -1,5 +1,6 @@
 using InstaCrud.Abstractions.Interfaces;
 using InstaCrud.Interfaces;
+using InstaCrud.Core.Querying;
 
 namespace InstaCrud.Core;
 
@@ -24,6 +25,10 @@ public sealed class CrudEngine<TResult> {
     public TResult Select<TEntity>()
         where TEntity : class =>
         _provider.Build(_commandFactory.CreateSelect<TEntity>());
+
+    public TResult Select<TEntity>(CrudQuery<TEntity> query)
+        where TEntity : class =>
+        _provider.Build(_commandFactory.CreateSelect(query));
 
     public TResult Update<TEntity>(TEntity entity)
         where TEntity : class =>

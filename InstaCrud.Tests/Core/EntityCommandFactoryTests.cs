@@ -1,6 +1,7 @@
 using InstaCrud.Abstractions.Attributes;
 using InstaCrud.Abstractions.CrudCommand;
 using InstaCrud.Handler;
+using InstaCrud.Core.Querying;
 using IgnoreAttribute = InstaCrud.Abstractions.Attributes.IgnoreAttribute;
 
 namespace InstaCrud.Tests.Core;
@@ -95,6 +96,44 @@ public sealed class EntityCommandFactoryTests {
         CollectionAssert.AreEqual(
             new[] { "ID", "NOME", nameof(Usuario.CriadoEm), nameof(Usuario.UltimoAcesso) },
             command.Fields.Select(x => x.ColumnName).ToArray());
+    }
+
+    [TestMethod]
+    public void Deve_Criar_Consulta_Tipada_Com_Mapeamentos() {
+        var query = new CrudQuery<Usuario>()
+            .Select(x => x.Id, x => x.Nome)
+            .Where(x => x.Nome, CrudFilterOperator.Like, "Mar%")
+            .OrderByDescending(x => x.Nome)
+            .Page(2, 10);
+
+        var command = _factory.CreateSelect(query);
+
+        CollectionAssert.AreEqual(
+            new[] { "ID", "NOME" },
+            command.Fields.Select(x => x.ColumnName).ToArray());
+        Assert.AreEqual("NOME", command.Filters.Single().ColumnName);
+        Assert.AreEqual(CrudFilterOperator.Like, command.Filters.Single().Operator);
+        Assert.AreEqual("NOME", command.Sorts.Single().ColumnName);
+        Assert.IsTrue(command.Sorts.Single().Descending);
+        Assert.AreEqual(2, command.Pagination!.Page);
+        Assert.AreEqual(10, command.Pagination.PageSize);
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Propriedade_Ignorada_Na_Consulta() {
+        var query = new CrudQuery<Usuario>()
+            .Where(x => x.SegredoTemporario, CrudFilterOperator.Equal, "segredo");
+
+        Assert.ThrowsExactly<ArgumentException>(() => _factory.CreateSelect(query));
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Expressao_Que_Nao_Seja_Propriedade_Direta() {
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            new CrudQuery<Usuario>().Where(
+                x => x.Nome.Length,
+                CrudFilterOperator.GreaterThan,
+                3));
     }
 
     [TestMethod]

@@ -4,6 +4,7 @@ using Dapper;
 using InstaCrud.Abstractions.CrudCommand;
 using InstaCrud.Abstractions.Sql;
 using InstaCrud.Core;
+using InstaCrud.Core.Querying;
 using InstaCrud.Handler;
 using InstaCrud.Interfaces;
 using InstaCrud.Sql;
@@ -72,6 +73,26 @@ public sealed class DapperCrudExecutor {
         CancellationToken cancellationToken = default)
         where TEntity : class {
         CrudCommandModel command = _commandFactory.CreateSelect<TEntity>();
+        SqlCommandDefinition definition = _provider.Build(command);
+        CommandDefinition dapperCommand = CreateCommand(
+            definition,
+            transaction,
+            commandTimeout,
+            cancellationToken);
+        IEnumerable<TEntity> entities = await _connection
+            .QueryAsync<TEntity>(dapperCommand)
+            .ConfigureAwait(false);
+
+        return entities.ToArray();
+    }
+
+    public async Task<IReadOnlyList<TEntity>> SelectAsync<TEntity>(
+        CrudQuery<TEntity> query,
+        IDbTransaction? transaction = null,
+        int? commandTimeout = null,
+        CancellationToken cancellationToken = default)
+        where TEntity : class {
+        CrudCommandModel command = _commandFactory.CreateSelect(query);
         SqlCommandDefinition definition = _provider.Build(command);
         CommandDefinition dapperCommand = CreateCommand(
             definition,

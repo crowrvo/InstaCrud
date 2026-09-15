@@ -1,4 +1,5 @@
 using CrudCommandModel = InstaCrud.Abstractions.CrudCommand.CrudCommand;
+using InstaCrud.Core.Querying;
 
 namespace InstaCrud.Interfaces;
 
@@ -7,6 +8,9 @@ public interface IEntityCommandFactory {
         where TEntity : class;
 
     CrudCommandModel CreateSelect<TEntity>()
+        where TEntity : class;
+
+    CrudCommandModel CreateSelect<TEntity>(CrudQuery<TEntity> query)
         where TEntity : class;
 
     CrudCommandModel CreateUpdate<TEntity>(TEntity entity)

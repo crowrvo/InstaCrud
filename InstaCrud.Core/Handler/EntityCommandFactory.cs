@@ -1,6 +1,7 @@
 using InstaCrud.Abstractions.CrudCommand;
 using InstaCrud.Core;
 using InstaCrud.Interfaces;
+using InstaCrud.Core.Querying;
 using CrudCommandModel = InstaCrud.Abstractions.CrudCommand.CrudCommand;
 
 namespace InstaCrud.Handler;
@@ -39,20 +40,44 @@ public sealed class EntityCommandFactory : IEntityCommandFactory {
     }
 
     public CrudCommandModel CreateSelect<TEntity>()
+        where TEntity : class =>
+        CreateSelect(new CrudQuery<TEntity>());
+
+    public CrudCommandModel CreateSelect<TEntity>(CrudQuery<TEntity> query)
         where TEntity : class {
+        ArgumentNullException.ThrowIfNull(query);
         CrudEntityDefinition definition = _registry.Get(typeof(TEntity));
+        IReadOnlyCollection<CrudPropertyDefinition> selectedProperties =
+            query.SelectedProperties.Count == 0
+                ? definition.Properties.Where(x => !x.Ignore).ToArray()
+                : query.SelectedProperties
+                    .Select(x => GetQueryableProperty(definition, x))
+                    .ToArray();
 
         return new CrudCommandModel {
             OperationType = CrudOperationType.Select,
             TableName = definition.TableName,
-            Fields = definition.Properties
-                .Where(x => !x.Ignore)
+            Fields = selectedProperties
                 .Select(x => new CrudField {
                     ColumnName = x.ColumnName,
                     ParameterName = x.PropertyName,
                     Value = null
                 })
-                .ToArray()
+                .ToArray(),
+            Filters = query.Filters
+                .Select(x => new CrudFilter {
+                    ColumnName = GetQueryableProperty(definition, x.PropertyName).ColumnName,
+                    Operator = x.Operator,
+                    Value = x.Value
+                })
+                .ToArray(),
+            Sorts = query.Sorts
+                .Select(x => new SortDefinition {
+                    ColumnName = GetQueryableProperty(definition, x.PropertyName).ColumnName,
+                    Descending = x.Descending
+                })
+                .ToArray(),
+            Pagination = query.Pagination
         };
     }
 
@@ -177,5 +202,26 @@ public sealed class EntityCommandFactory : IEntityCommandFactory {
         }
 
         return property.Getter(entity);
+    }
+
+    private static CrudPropertyDefinition GetQueryableProperty(
+        CrudEntityDefinition definition,
+        string propertyName) {
+        CrudPropertyDefinition? property = definition.Properties.FirstOrDefault(x =>
+            string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
+
+        if (property is null) {
+            throw new ArgumentException(
+                $"A propriedade '{propertyName}' não pertence à entidade '{definition.EntityType.Name}'.",
+                nameof(propertyName));
+        }
+
+        if (property.Ignore) {
+            throw new ArgumentException(
+                $"A propriedade '{propertyName}' está ignorada e não pode ser usada em consultas.",
+                nameof(propertyName));
+        }
+
+        return property;
     }
 }

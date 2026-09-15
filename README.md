@@ -152,7 +152,22 @@ IReadOnlyList<Usuario> usuarios =
     await executor.SelectAsync<Usuario>(cancellationToken: cancellationToken);
 ```
 
-Quando a chave possui `[DatabaseGenerated]`, o insert usa `OUTPUT INSERTED` e atribui o valor retornado à entidade. Transações e timeout podem ser informados em cada operação. A biblioteca não abre, fecha nem descarta a conexão recebida.
+Quando a chave possui `[DatabaseGenerated]`, o insert usa `OUTPUT INSERTED` e atribui o valor retornado à entidade. Transações e timeout podem ser informados em cada operação. O executor nunca descarta a conexão recebida; seu ciclo de vida continua pertencendo à aplicação.
+
+Filtros, projeção, ordenação e paginação podem ser definidos por propriedades do modelo:
+
+```csharp
+var query = new CrudQuery<Usuario>()
+    .Select(x => x.Id, x => x.Nome)
+    .Where(x => x.Ativo, CrudFilterOperator.Equal, true)
+    .OrderBy(x => x.Nome)
+    .Page(1, 50);
+
+IReadOnlyList<Usuario> usuariosAtivos =
+    await executor.SelectAsync(query, cancellationToken: cancellationToken);
+```
+
+As expressões aceitam somente acesso direto a propriedades. O nome informado em `[Column]` é resolvido pelo registro antes de chegar ao provider, impedindo que identificadores SQL arbitrários sejam introduzidos pela consulta.
 
 ## Estado do MVP
 
@@ -191,6 +206,7 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [x] gerar comandos SQL Server a partir de entidades;
 - [x] executar comandos assíncronos por uma conexão Dapper;
 - [x] isolar as sintaxes SQL Server e Oracle;
+- [x] oferecer consultas tipadas com filtro, projeção, ordenação e paginação;
 - [ ] suportar `RETURNING INTO` e chaves geradas no Oracle;
 - [ ] criar testes de integração e aplicação de exemplo;
 - [ ] projetar a integração ASP.NET Core;
