@@ -1,28 +1,24 @@
 using System.Collections;
-using System.Text.RegularExpressions;
 using InstaCrud.Abstractions.CrudCommand;
+using InstaCrud.Sql;
 
 namespace InstaCrud.Dapper.Builders;
 
-internal static partial class DapperSql {
-    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.CultureInvariant)]
-    private static partial Regex IdentifierPartPattern();
+internal sealed class DapperSql {
+    private readonly ISqlDialect _dialect;
 
-    public static string Identifier(string identifier) {
-        ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
-
-        string[] parts = identifier.Split('.');
-
-        if (parts.Any(x => !IdentifierPartPattern().IsMatch(x))) {
-            throw new ArgumentException(
-                $"O identificador SQL '{identifier}' é inválido.",
-                nameof(identifier));
-        }
-
-        return string.Join('.', parts.Select(x => $"[{x}]"));
+    public DapperSql(ISqlDialect dialect) {
+        ArgumentNullException.ThrowIfNull(dialect);
+        _dialect = dialect;
     }
 
-    public static void ValidateOperation(
+    public string Identifier(string identifier) =>
+        _dialect.Identifier(identifier);
+
+    public string StatementTerminator =>
+        _dialect.StatementTerminator;
+
+    public void ValidateOperation(
         CrudCommand command,
         CrudOperationType expectedOperation) {
         ArgumentNullException.ThrowIfNull(command);
@@ -49,16 +45,16 @@ internal static partial class DapperSql {
         }
     }
 
-    public static string AddParameter(
+    public string AddParameter(
         IDictionary<string, object?> parameters,
         object? value,
         ref int parameterIndex) {
         string name = $"p{parameterIndex++}";
         parameters.Add(name, value);
-        return $"@{name}";
+        return _dialect.Parameter(name);
     }
 
-    public static string Where(
+    public string Where(
         IReadOnlyCollection<CrudFilter> filters,
         IDictionary<string, object?> parameters,
         ref int parameterIndex) {
@@ -120,7 +116,7 @@ internal static partial class DapperSql {
         return $" WHERE {string.Join(" AND ", expressions)}";
     }
 
-    public static string OrderBy(IReadOnlyCollection<SortDefinition> sorts) {
+    public string OrderBy(IReadOnlyCollection<SortDefinition> sorts) {
         if (sorts.Count == 0)
             return string.Empty;
 
@@ -129,7 +125,7 @@ internal static partial class DapperSql {
             sorts.Select(x => $"{Identifier(x.ColumnName)}{(x.Descending ? " DESC" : " ASC")}"));
     }
 
-    public static string Pagination(
+    public string Pagination(
         PaginationDefinition? pagination,
         IReadOnlyCollection<SortDefinition> sorts,
         IDictionary<string, object?> parameters,
@@ -153,10 +149,13 @@ internal static partial class DapperSql {
         string offsetParameter = AddParameter(parameters, offset, ref parameterIndex);
         string pageSizeParameter = AddParameter(parameters, pagination.PageSize, ref parameterIndex);
 
-        return $" OFFSET {offsetParameter} ROWS FETCH NEXT {pageSizeParameter} ROWS ONLY";
+        return _dialect.Pagination(offsetParameter, pageSizeParameter);
     }
 
-    private static string BuildInExpression(
+    public string InsertReturning(IReadOnlyCollection<CrudField> fields) =>
+        _dialect.InsertReturning(fields.Select(x => x.ColumnName).ToArray());
+
+    private string BuildInExpression(
         string column,
         object value,
         IDictionary<string, object?> parameters,
@@ -169,9 +168,8 @@ internal static partial class DapperSql {
 
         var parameterNames = new List<string>();
 
-        foreach (object? item in values) {
+        foreach (object? item in values)
             parameterNames.Add(AddParameter(parameters, item, ref parameterIndex));
-        }
 
         if (parameterNames.Count == 0)
             throw new ArgumentException("O operador 'In' não aceita uma coleção vazia.", nameof(value));

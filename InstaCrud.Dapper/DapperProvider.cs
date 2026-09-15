@@ -2,16 +2,31 @@ using InstaCrud.Abstractions.CrudCommand;
 using InstaCrud.Abstractions.Interfaces;
 using InstaCrud.Abstractions.Sql;
 using InstaCrud.Dapper.Builders;
+using InstaCrud.Sql;
 using CrudCommandModel = InstaCrud.Abstractions.CrudCommand.CrudCommand;
 
 namespace InstaCrud.Dapper;
 
 public sealed class DapperProvider : ICrudProvider<SqlCommandDefinition> {
-    private readonly DapperInsertProvider _insert = new();
-    private readonly DapperSelectProvider _select = new();
-    private readonly DapperUpdateProvider _update = new();
-    private readonly DapperPatchProvider _patch = new();
-    private readonly DapperDeleteProvider _delete = new();
+    private readonly DapperInsertProvider _insert;
+    private readonly DapperSelectProvider _select;
+    private readonly DapperUpdateProvider _update;
+    private readonly DapperPatchProvider _patch;
+    private readonly DapperDeleteProvider _delete;
+
+    public DapperProvider()
+        : this(SqlServerDialect.Instance) {
+    }
+
+    public DapperProvider(ISqlDialect dialect) {
+        ArgumentNullException.ThrowIfNull(dialect);
+
+        _insert = new DapperInsertProvider(dialect);
+        _select = new DapperSelectProvider(dialect);
+        _update = new DapperUpdateProvider(dialect);
+        _patch = new DapperPatchProvider(dialect);
+        _delete = new DapperDeleteProvider(dialect);
+    }
 
     public SqlCommandDefinition Build(CrudCommandModel command) {
         ArgumentNullException.ThrowIfNull(command);

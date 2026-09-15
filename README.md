@@ -50,10 +50,10 @@ A partir desse modelo, a biblioteca deverá ser capaz de:
 | --- | --- | --- |
 | `InstaCrud.Abstractions` | Atributos, comandos e contratos públicos | Em desenvolvimento |
 | `InstaCrud.Core` | Descoberta, validação e registro de metadados | Em desenvolvimento |
-| `InstaCrud.Dapper` | Tradução de comandos para SQL Server parametrizado | Em desenvolvimento |
+| `InstaCrud.Dapper` | Geração e execução de comandos por Dapper | Em desenvolvimento |
 | `InstaCrud.AspNetCore` | Integração com DI e endpoints HTTP | Planejado |
 | `InstaCrud.EFCore` | Provider para Entity Framework Core | Planejado |
-| `InstaCrud.Sql` | Componentes SQL compartilhados, se necessários | Planejado |
+| `InstaCrud.Sql` | Dialetos SQL Server e Oracle | Em desenvolvimento |
 | `InstaCrud.Kria` | Integração com o mediador Kria | Fora do escopo atual |
 | `InstaCrud.Tests` | Testes unitários e de integração | Em desenvolvimento |
 
@@ -78,6 +78,18 @@ O contrato `ICrudProvider<TResult>` não pressupõe SQL nem Dapper. O `Core` tra
 - `InstaCrud.Kria` poderá fornecer seu próprio resultado e ciclo de execução quando sua API estiver disponível.
 
 Assim, atributos, registro, regras de campos e criação de comandos são compartilhados. Conexão, transação, materialização e sintaxe específica permanecem isoladas no provider.
+
+SQL Server é o dialeto padrão. Para gerar ou executar SQL Oracle, informe o dialeto explicitamente:
+
+```csharp
+var oracleCommands = DapperCrud.Create<Usuario>(OracleDialect.Instance);
+
+var oracleExecutor = DapperCrud.CreateExecutor<Usuario>(
+    oracleConnection,
+    OracleDialect.Instance);
+```
+
+O dialeto Oracle já cobre identificadores, parâmetros, CRUD sem retorno e paginação com `OFFSET/FETCH`. A recuperação automática de chaves geradas ainda está restrita ao SQL Server: no Oracle ela exigirá parâmetros de saída para `RETURNING INTO`.
 
 ## Mapeamento
 
@@ -144,7 +156,7 @@ Quando a chave possui `[DatabaseGenerated]`, o insert usa `OUTPUT INSERTED` e at
 
 ## Estado do MVP
 
-O SQL Server é o primeiro dialeto do provider Dapper. Outros bancos deverão receber dialetos ou providers próprios depois que o contrato do MVP estiver estável.
+SQL Server e Oracle são os bancos prioritários. Outros bancos deverão receber dialetos ou providers próprios depois que esses dois contratos estiverem estáveis.
 
 O primeiro marco funcional terá:
 
@@ -178,6 +190,8 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [x] concluir o registro e a leitura de entidades;
 - [x] gerar comandos SQL Server a partir de entidades;
 - [x] executar comandos assíncronos por uma conexão Dapper;
+- [x] isolar as sintaxes SQL Server e Oracle;
+- [ ] suportar `RETURNING INTO` e chaves geradas no Oracle;
 - [ ] criar testes de integração e aplicação de exemplo;
 - [ ] projetar a integração ASP.NET Core;
 - [ ] avaliar providers adicionais;

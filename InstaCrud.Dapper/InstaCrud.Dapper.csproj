@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\InstaCrud.Abstractions\InstaCrud.Abstractions.csproj" />
     <ProjectReference Include="..\InstaCrud.Core\InstaCrud.Core.csproj" />
+    <ProjectReference Include="..\InstaCrud.Sql\InstaCrud.Sql.csproj" />
   </ItemGroup>
 
 </Project>

@@ -6,6 +6,7 @@ using InstaCrud.Abstractions.Sql;
 using InstaCrud.Core;
 using InstaCrud.Handler;
 using InstaCrud.Interfaces;
+using InstaCrud.Sql;
 using CrudCommandModel = InstaCrud.Abstractions.CrudCommand.CrudCommand;
 
 namespace InstaCrud.Dapper;
@@ -18,14 +19,22 @@ public sealed class DapperCrudExecutor {
 
     public DapperCrudExecutor(
         IDbConnection connection,
-        IEntityRegistry registry) {
+        IEntityRegistry registry)
+        : this(connection, registry, SqlServerDialect.Instance) {
+    }
+
+    public DapperCrudExecutor(
+        IDbConnection connection,
+        IEntityRegistry registry,
+        ISqlDialect dialect) {
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(dialect);
 
         _connection = connection;
         _registry = registry;
         _commandFactory = new EntityCommandFactory(registry);
-        _provider = new DapperProvider();
+        _provider = new DapperProvider(dialect);
     }
 
     public async Task<int> InsertAsync<TEntity>(

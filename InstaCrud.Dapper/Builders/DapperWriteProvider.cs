@@ -1,5 +1,6 @@
 using InstaCrud.Abstractions.CrudCommand;
 using InstaCrud.Abstractions.Sql;
+using InstaCrud.Sql;
 using CrudCommandModel = InstaCrud.Abstractions.CrudCommand.CrudCommand;
 
 namespace InstaCrud.Dapper.Builders;
@@ -7,8 +8,10 @@ namespace InstaCrud.Dapper.Builders;
 internal static class DapperWriteProvider {
     public static SqlCommandDefinition Build(
         CrudCommandModel command,
-        CrudOperationType operationType) {
-        DapperSql.ValidateOperation(command, operationType);
+        CrudOperationType operationType,
+        ISqlDialect dialect) {
+        var sql = new DapperSql(dialect);
+        sql.ValidateOperation(command, operationType);
 
         if (command.Fields.Count == 0)
             throw new ArgumentException($"O {operationType} exige pelo menos um campo.", nameof(command));
@@ -23,12 +26,12 @@ internal static class DapperWriteProvider {
         string assignments = string.Join(
             ", ",
             command.Fields.Select(x =>
-                $"{DapperSql.Identifier(x.ColumnName)} = " +
-                DapperSql.AddParameter(parameters, x.Value, ref parameterIndex)));
-        string where = DapperSql.Where(command.Filters, parameters, ref parameterIndex);
+                $"{sql.Identifier(x.ColumnName)} = " +
+                sql.AddParameter(parameters, x.Value, ref parameterIndex)));
+        string where = sql.Where(command.Filters, parameters, ref parameterIndex);
 
         return new SqlCommandDefinition {
-            Sql = $"UPDATE {DapperSql.Identifier(command.TableName)} SET {assignments}{where};",
+            Sql = $"UPDATE {sql.Identifier(command.TableName)} SET {assignments}{where}{sql.StatementTerminator}",
             Parameters = parameters
         };
     }
