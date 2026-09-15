@@ -152,8 +152,11 @@ internal sealed class DapperSql {
         return _dialect.Pagination(offsetParameter, pageSizeParameter);
     }
 
-    public string InsertReturning(IReadOnlyCollection<CrudField> fields) =>
-        _dialect.InsertReturning(fields.Select(x => x.ColumnName).ToArray());
+    public SqlInsertReturningDefinition InsertReturning(IReadOnlyCollection<CrudField> fields) =>
+        _dialect.InsertReturning(fields.Select(x => new SqlReturningField(
+            x.ColumnName,
+            x.ParameterName ?? x.ColumnName,
+            x.ValueType ?? typeof(object))).ToArray());
 
     private string BuildInExpression(
         string column,

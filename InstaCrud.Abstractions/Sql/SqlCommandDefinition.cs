@@ -5,4 +5,9 @@ public sealed class SqlCommandDefinition {
 
     public IReadOnlyDictionary<string, object?> Parameters { get; init; }
         = new Dictionary<string, object?>();
+
+    public SqlCommandResultMode ResultMode { get; init; }
+
+    public IReadOnlyCollection<SqlOutputParameterDefinition> OutputParameters { get; init; }
+        = [];
 }

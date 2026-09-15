@@ -11,5 +11,6 @@ public interface ISqlDialect {
 
     string Pagination(string offsetParameter, string pageSizeParameter);
 
-    string InsertReturning(IReadOnlyCollection<string> columnNames);
+    SqlInsertReturningDefinition InsertReturning(
+        IReadOnlyCollection<SqlReturningField> fields);
 }

@@ -1,4 +1,5 @@
 using InstaCrud.Abstractions.CrudCommand;
+using InstaCrud.Abstractions.Sql;
 using InstaCrud.Dapper;
 using InstaCrud.Sql;
 
@@ -51,7 +52,7 @@ public sealed class SqlDialectTests {
     }
 
     [TestMethod]
-    public void Deve_Explicitar_Limitacao_De_Returning_No_Oracle() {
+    public void Deve_Gerar_Returning_Into_No_Oracle() {
         var provider = new DapperProvider(OracleDialect.Instance);
         var command = new CrudCommand {
             OperationType = CrudOperationType.Insert,
@@ -63,11 +64,21 @@ public sealed class SqlDialectTests {
             ReturningFields = [new CrudField {
                 ColumnName = "ID",
                 ParameterName = "Id",
+                ValueType = typeof(int),
                 Value = null
             }]
         };
 
-        Assert.ThrowsExactly<NotSupportedException>(() => provider.Build(command));
+        var result = provider.Build(command);
+
+        Assert.AreEqual(
+            "INSERT INTO \"APP\".\"USUARIO\" (\"NOME\") VALUES (:p0) RETURNING \"ID\" INTO :out0",
+            result.Sql);
+        Assert.AreEqual(SqlCommandResultMode.OutputParameters, result.ResultMode);
+        Assert.HasCount(1, result.OutputParameters);
+        Assert.AreEqual("out0", result.OutputParameters.Single().Name);
+        Assert.AreEqual("Id", result.OutputParameters.Single().TargetName);
+        Assert.AreEqual(typeof(int), result.OutputParameters.Single().ValueType);
     }
 
     private static CrudCommand SelectCommand() => new() {

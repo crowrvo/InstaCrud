@@ -27,11 +27,13 @@ public sealed class DapperInsertProvider : ICrudInsertProvider<SqlCommandDefinit
         string values = string.Join(
             ", ",
             command.Fields.Select(x => _sql.AddParameter(parameters, x.Value, ref parameterIndex)));
-        string output = _sql.InsertReturning(command.ReturningFields);
+        SqlInsertReturningDefinition returning = _sql.InsertReturning(command.ReturningFields);
 
         return new SqlCommandDefinition {
-            Sql = $"INSERT INTO {_sql.Identifier(command.TableName)} ({columns}){output} VALUES ({values}){_sql.StatementTerminator}",
-            Parameters = parameters
+            Sql = $"INSERT INTO {_sql.Identifier(command.TableName)} ({columns}){returning.BeforeValues} VALUES ({values}){returning.AfterValues}{_sql.StatementTerminator}",
+            Parameters = parameters,
+            ResultMode = returning.ResultMode,
+            OutputParameters = returning.OutputParameters
         };
     }
 }

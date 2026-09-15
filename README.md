@@ -89,7 +89,7 @@ var oracleExecutor = DapperCrud.CreateExecutor<Usuario>(
     OracleDialect.Instance);
 ```
 
-O dialeto Oracle já cobre identificadores, parâmetros, CRUD sem retorno e paginação com `OFFSET/FETCH`. A recuperação automática de chaves geradas ainda está restrita ao SQL Server: no Oracle ela exigirá parâmetros de saída para `RETURNING INTO`.
+O dialeto Oracle cobre identificadores, parâmetros, paginação com `OFFSET/FETCH` e recuperação de chaves geradas com `RETURNING INTO`. Os parâmetros de saída são tipados e seus valores são atribuídos de volta à entidade após a execução.
 
 ## Mapeamento
 
@@ -152,7 +152,7 @@ IReadOnlyList<Usuario> usuarios =
     await executor.SelectAsync<Usuario>(cancellationToken: cancellationToken);
 ```
 
-Quando a chave possui `[DatabaseGenerated]`, o insert usa `OUTPUT INSERTED` e atribui o valor retornado à entidade. Transações e timeout podem ser informados em cada operação. O executor nunca descarta a conexão recebida; seu ciclo de vida continua pertencendo à aplicação.
+Quando a chave possui `[DatabaseGenerated]`, o insert usa `OUTPUT INSERTED` no SQL Server ou `RETURNING INTO` no Oracle e atribui o valor retornado à entidade. Transações e timeout podem ser informados em cada operação. O executor nunca descarta a conexão recebida; seu ciclo de vida continua pertencendo à aplicação.
 
 Filtros, projeção, ordenação e paginação podem ser definidos por propriedades do modelo:
 
@@ -207,7 +207,7 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [x] executar comandos assíncronos por uma conexão Dapper;
 - [x] isolar as sintaxes SQL Server e Oracle;
 - [x] oferecer consultas tipadas com filtro, projeção, ordenação e paginação;
-- [ ] suportar `RETURNING INTO` e chaves geradas no Oracle;
+- [x] suportar `RETURNING INTO` e chaves geradas no Oracle;
 - [ ] criar testes de integração e aplicação de exemplo;
 - [ ] projetar a integração ASP.NET Core;
 - [ ] avaliar providers adicionais;

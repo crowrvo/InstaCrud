@@ -46,25 +46,53 @@ public sealed class DapperCrudExecutor {
         where TEntity : class {
         CrudCommandModel command = _commandFactory.CreateInsert(entity);
         SqlCommandDefinition definition = _provider.Build(command);
+        DynamicParameters parameters = CreateParameters(definition);
         CommandDefinition dapperCommand = CreateCommand(
             definition,
+            parameters,
             transaction,
             commandTimeout,
             cancellationToken);
 
-        if (command.ReturningFields.Count == 0)
-            return await _connection.ExecuteAsync(dapperCommand).ConfigureAwait(false);
+        switch (definition.ResultMode) {
+            case SqlCommandResultMode.None:
+                return await _connection.ExecuteAsync(dapperCommand).ConfigureAwait(false);
 
-        if (command.ReturningFields.Count > 1) {
-            throw new NotSupportedException(
-                "A atribuição automática suporta apenas uma propriedade gerada pelo banco.");
+            case SqlCommandResultMode.ScalarResult:
+                if (command.ReturningFields.Count != 1) {
+                    throw new NotSupportedException(
+                        "O retorno escalar suporta exatamente uma propriedade gerada pelo banco.");
+                }
+
+                object? value = await _connection
+                    .ExecuteScalarAsync<object?>(dapperCommand)
+                    .ConfigureAwait(false);
+                SetGeneratedValue(
+                    entity,
+                    command.ReturningFields.Single().ParameterName!,
+                    value);
+                return 1;
+
+            case SqlCommandResultMode.OutputParameters:
+                int affectedRows = await _connection
+                    .ExecuteAsync(dapperCommand)
+                    .ConfigureAwait(false);
+
+                foreach (SqlOutputParameterDefinition output in definition.OutputParameters) {
+                    SetGeneratedValue(
+                        entity,
+                        output.TargetName,
+                        parameters.Get<object?>(output.Name));
+                }
+
+                return affectedRows;
+
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(definition),
+                    definition.ResultMode,
+                    "Modo de resultado SQL desconhecido.");
         }
-
-        object? value = await _connection
-            .ExecuteScalarAsync<object?>(dapperCommand)
-            .ConfigureAwait(false);
-        SetGeneratedValue(entity, command.ReturningFields.Single(), value);
-        return 1;
     }
 
     public async Task<IReadOnlyList<TEntity>> SelectAsync<TEntity>(
@@ -76,6 +104,7 @@ public sealed class DapperCrudExecutor {
         SqlCommandDefinition definition = _provider.Build(command);
         CommandDefinition dapperCommand = CreateCommand(
             definition,
+            CreateParameters(definition),
             transaction,
             commandTimeout,
             cancellationToken);
@@ -96,6 +125,7 @@ public sealed class DapperCrudExecutor {
         SqlCommandDefinition definition = _provider.Build(command);
         CommandDefinition dapperCommand = CreateCommand(
             definition,
+            CreateParameters(definition),
             transaction,
             commandTimeout,
             cancellationToken);
@@ -150,35 +180,48 @@ public sealed class DapperCrudExecutor {
         CancellationToken cancellationToken) {
         SqlCommandDefinition definition = _provider.Build(command);
         return _connection.ExecuteAsync(
-            CreateCommand(definition, transaction, commandTimeout, cancellationToken));
+            CreateCommand(
+                definition,
+                CreateParameters(definition),
+                transaction,
+                commandTimeout,
+                cancellationToken));
     }
 
     private static CommandDefinition CreateCommand(
         SqlCommandDefinition definition,
+        DynamicParameters parameters,
         IDbTransaction? transaction,
         int? commandTimeout,
         CancellationToken cancellationToken) =>
         new(
             definition.Sql,
-            CreateParameters(definition.Parameters),
+            parameters,
             transaction,
             commandTimeout,
             CommandType.Text,
             cancellationToken: cancellationToken);
 
-    private static DynamicParameters CreateParameters(
-        IReadOnlyDictionary<string, object?> values) {
+    private static DynamicParameters CreateParameters(SqlCommandDefinition definition) {
         var parameters = new DynamicParameters();
 
-        foreach ((string name, object? value) in values)
+        foreach ((string name, object? value) in definition.Parameters)
             parameters.Add(name, value);
+
+        foreach (SqlOutputParameterDefinition output in definition.OutputParameters) {
+            parameters.Add(
+                output.Name,
+                dbType: GetDbType(output.ValueType),
+                direction: ParameterDirection.Output,
+                size: output.ValueType == typeof(string) ? 4000 : null);
+        }
 
         return parameters;
     }
 
     private void SetGeneratedValue<TEntity>(
         TEntity entity,
-        CrudField returningField,
+        string targetName,
         object? value)
         where TEntity : class {
         CrudPropertyDefinition property = _registry
@@ -186,7 +229,7 @@ public sealed class DapperCrudExecutor {
             .Properties
             .Single(x => string.Equals(
                 x.PropertyName,
-                returningField.ParameterName,
+                targetName,
                 StringComparison.Ordinal));
 
         if (property.Setter is null) {
@@ -195,6 +238,37 @@ public sealed class DapperCrudExecutor {
         }
 
         property.Setter(entity, ConvertValue(value, property.PropertyType));
+    }
+
+    private static DbType GetDbType(Type valueType) {
+        Type type = Nullable.GetUnderlyingType(valueType) ?? valueType;
+
+        if (type.IsEnum)
+            type = Enum.GetUnderlyingType(type);
+
+        return Type.GetTypeCode(type) switch {
+            TypeCode.Boolean => DbType.Boolean,
+            TypeCode.Byte => DbType.Byte,
+            TypeCode.SByte => DbType.SByte,
+            TypeCode.Int16 => DbType.Int16,
+            TypeCode.UInt16 => DbType.UInt16,
+            TypeCode.Int32 => DbType.Int32,
+            TypeCode.UInt32 => DbType.UInt32,
+            TypeCode.Int64 => DbType.Int64,
+            TypeCode.UInt64 => DbType.UInt64,
+            TypeCode.Single => DbType.Single,
+            TypeCode.Double => DbType.Double,
+            TypeCode.Decimal => DbType.Decimal,
+            TypeCode.DateTime => DbType.DateTime,
+            TypeCode.Char => DbType.StringFixedLength,
+            TypeCode.String => DbType.String,
+            _ when type == typeof(Guid) => DbType.Guid,
+            _ when type == typeof(byte[]) => DbType.Binary,
+            _ when type == typeof(DateTimeOffset) => DbType.DateTimeOffset,
+            _ when type == typeof(TimeSpan) => DbType.Time,
+            _ => throw new NotSupportedException(
+                $"O tipo '{valueType.Name}' não pode ser usado como parâmetro de saída.")
+        };
     }
 
     private static object? ConvertValue(object? value, Type propertyType) {

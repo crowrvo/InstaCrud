@@ -1,5 +1,6 @@
 using InstaCrud.Abstractions.CrudCommand;
 using InstaCrud.Abstractions.Attributes;
+using InstaCrud.Abstractions.Sql;
 using InstaCrud.Dapper;
 
 namespace InstaCrud.Tests.Dapper;
@@ -28,6 +29,7 @@ public sealed class DapperProviderTests {
         Assert.AreEqual(
             "INSERT INTO [CLIENTE] ([NOME_COMPLETO]) OUTPUT INSERTED.[Id] VALUES (@p0);",
             result.Sql);
+        Assert.AreEqual(SqlCommandResultMode.ScalarResult, result.ResultMode);
         Assert.AreEqual("Ana", result.Parameters["p0"]);
     }
 

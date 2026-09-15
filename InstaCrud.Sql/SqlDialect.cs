@@ -40,7 +40,8 @@ public abstract partial class SqlDialect : ISqlDialect {
 
     public abstract string Pagination(string offsetParameter, string pageSizeParameter);
 
-    public abstract string InsertReturning(IReadOnlyCollection<string> columnNames);
+    public abstract SqlInsertReturningDefinition InsertReturning(
+        IReadOnlyCollection<SqlReturningField> fields);
 
     protected abstract string QuoteIdentifierPart(string identifierPart);
 }

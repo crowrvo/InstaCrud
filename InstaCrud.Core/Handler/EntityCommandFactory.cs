@@ -33,6 +33,7 @@ public sealed class EntityCommandFactory : IEntityCommandFactory {
                 .Select(x => new CrudField {
                     ColumnName = x.ColumnName,
                     ParameterName = x.PropertyName,
+                    ValueType = x.PropertyType,
                     Value = null
                 })
                 .ToArray()
