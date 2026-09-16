@@ -73,7 +73,7 @@ Essa separação é intencional:
 | `InstaCrud.Dapper` | Geração e execução de comandos por Dapper | Em desenvolvimento |
 | `InstaCrud.AspNetCore` | Integração com DI e endpoints HTTP | Planejado |
 | `InstaCrud.EFCore` | Provider para Entity Framework Core | Planejado |
-| `InstaCrud.Sql` | Dialetos SQL Server e Oracle | Em desenvolvimento |
+| `InstaCrud.Sql` | Dialetos SQL Server, Oracle e SQLite | Em desenvolvimento |
 | `InstaCrud.Kria` | Integração com o mediador Kria | Fora do escopo atual |
 | `InstaCrud.Tests` | Testes unitários e de integração | Em desenvolvimento |
 
@@ -94,7 +94,7 @@ classe anotada
 
 O contrato `ICrudProvider<TResult>` não pressupõe SQL nem Dapper. O `Core` transforma a entidade em um comando neutro e cada extensão decide como processá-lo:
 
-- `InstaCrud.Dapper` traduz o comando para SQL Server e opcionalmente o executa em uma `IDbConnection`;
+- `InstaCrud.Dapper` traduz o comando para o dialeto SQL selecionado e opcionalmente o executa em uma `IDbConnection`;
 - `InstaCrud.EFCore` poderá aplicar a operação a um `DbContext` sem reutilizar o executor Dapper;
 - `InstaCrud.AspNetCore` poderá localizar um engine registrado e publicar endpoints, sem conhecer detalhes do banco;
 - `InstaCrud.Kria` poderá fornecer seu próprio resultado e ciclo de execução quando sua API estiver disponível.
@@ -150,6 +150,8 @@ var oracleExecutor = DapperCrud.CreateExecutor<Usuario>(
 ```
 
 O dialeto Oracle cobre identificadores, parâmetros, paginação com `OFFSET/FETCH` e recuperação de chaves geradas com `RETURNING INTO`. Os parâmetros de saída são tipados e seus valores são atribuídos de volta à entidade após a execução.
+
+SQLite também está disponível como dialeto de apoio ao desenvolvimento. Ele mantém o exemplo e os testes de integração autocontidos, sem alterar a prioridade de produção em SQL Server e Oracle.
 
 ## Mapeamento
 
@@ -212,7 +214,7 @@ IReadOnlyList<Usuario> usuarios =
     await executor.SelectAsync<Usuario>(cancellationToken: cancellationToken);
 ```
 
-Quando a chave possui `[DatabaseGenerated]`, o insert usa `OUTPUT INSERTED` no SQL Server ou `RETURNING INTO` no Oracle e atribui o valor retornado à entidade. Transações e timeout podem ser informados em cada operação. O executor nunca descarta a conexão recebida; seu ciclo de vida continua pertencendo à aplicação.
+Quando a chave possui `[DatabaseGenerated]`, o insert usa `OUTPUT INSERTED` no SQL Server, `RETURNING INTO` no Oracle ou `RETURNING` no SQLite e atribui o valor retornado à entidade. Transações e timeout podem ser informados em cada operação. O executor nunca descarta a conexão recebida; seu ciclo de vida continua pertencendo à aplicação.
 
 Filtros, projeção, ordenação e paginação podem ser definidos por propriedades do modelo:
 
@@ -246,18 +248,28 @@ ItemPedido? item = await executor.FindAsync<ItemPedido>(chave);
 
 `PageAsync` executa a consulta dos itens e a contagem sequencialmente. Quando ambos precisarem enxergar exatamente o mesmo estado do banco, forneça uma transação ao método.
 
+## Exemplo executável
+
+O projeto `samples/InstantCrud.Sample` demonstra o ciclo CRUD completo com SQLite em memória. Ele cria o schema ao iniciar e não exige servidor, arquivo de banco ou configuração externa:
+
+```shell
+dotnet run --project samples/InstantCrud.Sample/InstantCrud.Sample.csproj
+```
+
+O exemplo insere entidades e recupera suas chaves geradas, faz busca e consulta paginada, executa update e patch, exclui um registro e confirma a contagem final. O banco existe somente durante a execução do processo.
+
 ## Estado do MVP
 
-SQL Server e Oracle são os bancos prioritários. Outros bancos deverão receber dialetos ou providers próprios depois que esses dois contratos estiverem estáveis.
+SQL Server e Oracle são os bancos prioritários. SQLite é mantido como dialeto leve para o exemplo e a suíte de integração; outros bancos deverão receber dialetos ou providers próprios depois que os contratos prioritários estiverem estáveis.
 
 ### Progresso
 
 ```text
-MVP funcional  [████████████████░░░░] 81%
-Produto final  [███████████░░░░░░░░░] 57%
+MVP funcional  [█████████████████░░░] 86%
+Produto final  [████████████░░░░░░░░] 60%
 ```
 
-Estimativa atualizada em 15 de setembro de 2026. O primeiro percentual considera o MVP de persistência. O segundo inclui a geração ASP.NET Core/OpenAPI e a preparação para distribuição. EF Core, Kria e providers futuros não bloqueiam a primeira versão completa baseada em Dapper.
+Estimativa atualizada em 16 de setembro de 2026. O primeiro percentual considera o MVP de persistência. O segundo inclui a geração ASP.NET Core/OpenAPI e a preparação para distribuição. EF Core, Kria e providers futuros não bloqueiam a primeira versão completa baseada em Dapper.
 
 | Área | Peso | Entregue | Situação |
 | --- | ---: | ---: | --- |
@@ -267,9 +279,9 @@ Estimativa atualizada em 15 de setembro de 2026. O primeiro percentual considera
 | Dialeto SQL Server | 15% | 12% | Falta validação em banco real |
 | Dialeto Oracle | 15% | 10% | Falta validar tipos e `RETURNING INTO` reais |
 | Execução Dapper | 10% | 8% | Falta endurecer ciclo de conexão e erros |
-| Testes automatizados | 10% | 3% | 56 testes unitários; integração pendente |
-| Documentação e exemplo | 5% | 3% | README pronto; aplicação sample pendente |
-| **Total** | **100%** | **81%** | **MVP avançado, ainda não publicável** |
+| Testes automatizados | 10% | 6% | 60 testes; ciclo CRUD e rollback validados em SQLite |
+| Documentação e exemplo | 5% | 5% | Exemplo SQLite autocontido e reproduzível |
+| **Total** | **100%** | **86%** | **MVP avançado, ainda não publicável** |
 
 ### O que falta para concluir o MVP
 
@@ -277,7 +289,6 @@ Estimativa atualizada em 15 de setembro de 2026. O primeiro percentual considera
 2. Validar insert, identidade, select, update, patch, delete, paginação e rollback nos dois bancos.
 3. Confirmar `RETURNING INTO` com o driver Oracle e os tipos CLR suportados.
 4. Definir o comportamento quando nenhuma ou múltiplas linhas forem afetadas.
-5. Criar uma aplicação mínima reproduzível com entidades, schema e ciclo CRUD completo.
 
 ### Critério de conclusão
 
@@ -319,9 +330,10 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [x] oferecer consultas tipadas com filtro, projeção, ordenação e paginação;
 - [x] oferecer busca por chave, contagem e resultado paginado;
 - [x] suportar `RETURNING INTO` e chaves geradas no Oracle;
+- [x] validar o ciclo CRUD e rollback em SQLite em memória;
 - [ ] validar o ciclo CRUD em uma instância SQL Server;
 - [ ] validar o ciclo CRUD em uma instância Oracle;
-- [ ] criar uma aplicação de exemplo reproduzível;
+- [x] criar uma aplicação de exemplo reproduzível;
 - [x] endurecer validações de metadados e conflitos no registro;
 - [x] criar exceções públicas para configuração e entidades não registradas;
 - [ ] definir resultados e exceções para operações de persistência;
