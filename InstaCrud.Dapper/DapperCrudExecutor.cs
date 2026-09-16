@@ -12,7 +12,7 @@ using CrudCommandModel = InstaCrud.Abstractions.CrudCommand.CrudCommand;
 
 namespace InstaCrud.Dapper;
 
-public sealed class DapperCrudExecutor {
+public sealed class DapperCrudExecutor : ICrudExecutor {
     private readonly IDbConnection _connection;
     private readonly IEntityRegistry _registry;
     private readonly IEntityCommandFactory _commandFactory;
