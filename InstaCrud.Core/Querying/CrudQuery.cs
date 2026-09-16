@@ -55,6 +55,12 @@ public sealed class CrudQuery<TEntity>
         return this;
     }
 
+    public CrudQuery<TEntity> OrderBy(string propertyName, bool descending = false) {
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
+        _sorts.Add(new EntityQuerySort(propertyName, descending));
+        return this;
+    }
+
     public CrudQuery<TEntity> Page(int page, int pageSize) {
         if (page < 1)
             throw new ArgumentOutOfRangeException(nameof(page), "A página deve ser maior que zero.");

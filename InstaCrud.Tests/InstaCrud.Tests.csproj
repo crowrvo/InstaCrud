@@ -9,11 +9,13 @@
 
   <ItemGroup>
     <PackageReference Include="MSTest" Version="4.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\InstaCrud.Abstractions\InstaCrud.Abstractions.csproj" />
+    <ProjectReference Include="..\InstaCrud.AspNetCore\InstaCrud.AspNetCore.csproj" />
     <ProjectReference Include="..\InstaCrud.Core\InstaCrud.Core.csproj" />
     <ProjectReference Include="..\InstaCrud.Dapper\InstaCrud.Dapper.csproj" />
     <ProjectReference Include="..\InstaCrud.Sql\InstaCrud.Sql.csproj" />
