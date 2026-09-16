@@ -231,6 +231,7 @@ _pkginfo.txt
 
 # Others
 ClientBin/
+samples/InstantCrud.ApiSample/instantcrud-sample.db
 ~$*
 *~
 *.dbmdl

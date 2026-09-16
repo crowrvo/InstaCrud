@@ -71,7 +71,7 @@ Essa separação é intencional:
 | `InstaCrud.Abstractions` | Atributos, comandos e contratos públicos | Em desenvolvimento |
 | `InstaCrud.Core` | Descoberta, validação e registro de metadados | Em desenvolvimento |
 | `InstaCrud.Dapper` | Geração e execução de comandos por Dapper | Em desenvolvimento |
-| `InstaCrud.AspNetCore` | Integração com DI e endpoints HTTP | Planejado |
+| `InstaCrud.AspNetCore` | Integração com DI, endpoints HTTP, OpenAPI e Scalar | Em desenvolvimento |
 | `InstaCrud.EFCore` | Provider para Entity Framework Core | Planejado |
 | `InstaCrud.Sql` | Dialetos SQL Server, Oracle e SQLite | Em desenvolvimento |
 | `InstaCrud.Kria` | Integração com o mediador Kria | Fora do escopo atual |
@@ -118,16 +118,21 @@ public sealed class Usuario
 }
 ```
 
-A visão para a inicialização da aplicação é deliberadamente pequena:
+A inicialização da aplicação registra as entidades e o executor uma única vez:
 
 ```csharp
-builder.Services.AddInstantCrud(options =>
-    options.UseSqlServer(connectionString));
+builder.Services.AddInstantCrud(options => options
+    .AddEntity<Usuario>()
+    .UseExecutor((services, registry) =>
+        new DapperCrudExecutor(
+            services.GetRequiredService<IDbConnection>(),
+            registry,
+            SqliteDialect.Instance)));
 
 app.MapInstantCrud();
 ```
 
-> `AddInstantCrud` e `MapInstantCrud` representam a API planejada e ainda não estão implementados.
+`AddInstantCrud` registra metadados, executor e geração do documento OpenAPI. `MapInstantCrud` publica os endpoints e, por padrão, disponibiliza o documento em `/openapi/v1.json` e a interface Scalar em `/scalar/`. A fábrica de executor mantém a camada HTTP independente de Dapper, EF Core ou outro mediador.
 
 Com isso, o runtime deverá gerar automaticamente:
 
@@ -258,6 +263,16 @@ dotnet run --project samples/InstantCrud.Sample/InstantCrud.Sample.csproj
 
 O exemplo insere entidades e recupera suas chaves geradas, faz busca e consulta paginada, executa update e patch, exclui um registro e confirma a contagem final. O banco existe somente durante a execução do processo.
 
+### API com Scalar
+
+O projeto `samples/InstantCrud.ApiSample` executa uma API completa sobre SQLite e cria automaticamente o arquivo local `instantcrud-sample.db`:
+
+```shell
+dotnet run --project samples/InstantCrud.ApiSample/InstantCrud.ApiSample.csproj
+```
+
+Depois de iniciar a aplicação, abra `http://localhost:5000/scalar/`. A interface Scalar permite visualizar e chamar os endpoints gerados para insert, listagem, busca por chave, paginação, PUT, PATCH e delete. A porta efetiva também é exibida pelo ASP.NET Core no terminal.
+
 ## Estado do MVP
 
 SQL Server e Oracle são os bancos prioritários. SQLite é mantido como dialeto leve para o exemplo e a suíte de integração; outros bancos deverão receber dialetos ou providers próprios depois que os contratos prioritários estiverem estáveis.
@@ -266,7 +281,7 @@ SQL Server e Oracle são os bancos prioritários. SQLite é mantido como dialeto
 
 ```text
 MVP funcional  [█████████████████░░░] 86%
-Produto final  [████████████░░░░░░░░] 60%
+Produto final  [██████████████░░░░░░] 70%
 ```
 
 Estimativa atualizada em 16 de setembro de 2026. O primeiro percentual considera o MVP de persistência. O segundo inclui a geração ASP.NET Core/OpenAPI e a preparação para distribuição. EF Core, Kria e providers futuros não bloqueiam a primeira versão completa baseada em Dapper.
@@ -279,7 +294,7 @@ Estimativa atualizada em 16 de setembro de 2026. O primeiro percentual considera
 | Dialeto SQL Server | 15% | 12% | Falta validação em banco real |
 | Dialeto Oracle | 15% | 10% | Falta validar tipos e `RETURNING INTO` reais |
 | Execução Dapper | 10% | 8% | Falta endurecer ciclo de conexão e erros |
-| Testes automatizados | 10% | 6% | 60 testes; ciclo CRUD e rollback validados em SQLite |
+| Testes automatizados | 10% | 6% | 61 testes; persistência e API validadas em SQLite |
 | Documentação e exemplo | 5% | 5% | Exemplo SQLite autocontido e reproduzível |
 | **Total** | **100%** | **86%** | **MVP avançado, ainda não publicável** |
 
@@ -303,7 +318,7 @@ registrar entidade
     -> confirmar commit/rollback
 ```
 
-A geração ASP.NET Core/OpenAPI será o marco seguinte ao MVP de persistência e faz parte do objetivo final do produto. EF Core e Kria continuarão como providers posteriores.
+A geração ASP.NET Core/OpenAPI já possui seu primeiro fluxo funcional, incluindo a interface Scalar. Os próximos incrementos da camada HTTP são filtros dinâmicos, opções de segurança e personalização mais granular dos contratos. EF Core e Kria continuarão como providers posteriores.
 
 ## Desenvolvimento
 
@@ -339,9 +354,11 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [ ] definir resultados e exceções para operações de persistência;
 - [ ] adicionar CI para build e testes;
 - [ ] padronizar projetos e namespaces com o nome público `InstantCrud`;
-- [ ] implementar registro por DI com `AddInstantCrud`;
-- [ ] gerar controllers ou endpoints CRUD com `MapInstantCrud`;
-- [ ] gerar contratos, parâmetros e respostas no OpenAPI;
+- [x] implementar registro por DI com `AddInstantCrud`;
+- [x] gerar endpoints CRUD com `MapInstantCrud`;
+- [x] gerar o documento OpenAPI e disponibilizar a interface Scalar;
+- [ ] expor filtros e ordenação dinâmica nos endpoints HTTP;
+- [ ] adicionar políticas de autorização e personalização dos endpoints;
 - [ ] avaliar providers adicionais;
 - [ ] definir empacotamento, versionamento e publicação no NuGet.
 

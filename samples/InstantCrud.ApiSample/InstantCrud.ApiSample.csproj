@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\InstaCrud.Abstractions\InstaCrud.Abstractions.csproj" />
+    <ProjectReference Include="..\..\InstaCrud.AspNetCore\InstaCrud.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\InstaCrud.Dapper\InstaCrud.Dapper.csproj" />
+    <ProjectReference Include="..\..\InstaCrud.Sql\InstaCrud.Sql.csproj" />
+  </ItemGroup>
+
+</Project>
