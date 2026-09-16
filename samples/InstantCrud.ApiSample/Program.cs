@@ -1,9 +1,9 @@
 using System.Data;
+using System.Reflection;
 using InstaCrud.AspNetCore;
 using InstaCrud.Dapper;
 using InstaCrud.Interfaces;
 using InstaCrud.Sql;
-using InstantCrud.ApiSample;
 using Microsoft.Data.Sqlite;
 
 const string connectionString = "Data Source=instantcrud-sample.db";
@@ -14,7 +14,7 @@ builder.Services.AddScoped<IDbConnection>(_ => new SqliteConnection(connectionSt
 builder.Services.AddInstantCrud(options => {
     options.ApiTitle = "InstantCrud SQLite Sample";
     options
-        .AddEntity<Usuario>()
+        .AddEntitiesFromAssembly(Assembly.GetExecutingAssembly())
         .UseExecutor((services, registry) =>
             new DapperCrudExecutor(
                 services.GetRequiredService<IDbConnection>(),
@@ -42,6 +42,16 @@ static async Task InitializeDatabaseAsync(string connectionString) {
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
             NOME TEXT NOT NULL,
             EMAIL TEXT NOT NULL,
+            ATIVO INTEGER NOT NULL,
+            CRIADO_EM TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS ENDERECO (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            RUA TEXT NOT NULL,
+            NUMERO INTEGER NOT NULL,
+            BAIRRO TEXT NOT NULL,
+            COMPLEMENTO TEXT NULL,
             ATIVO INTEGER NOT NULL,
             CRIADO_EM TEXT NOT NULL
         );
