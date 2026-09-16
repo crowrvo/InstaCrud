@@ -1,5 +1,6 @@
 using InstaCrud.Core;
 using InstaCrud.Handler;
+using InstaCrud.Exceptions;
 
 namespace InstaCrud.Tests.Core;
 
@@ -20,15 +21,30 @@ public sealed class EntityRegistryTests {
     public void Deve_Rejeitar_Tipo_Nao_Registrado() {
         var registry = new EntityRegistry([]);
 
-        Assert.ThrowsExactly<KeyNotFoundException>(
+        Assert.ThrowsExactly<EntityNotRegisteredException>(
             () => registry.Get(typeof(Usuario)));
     }
 
     [TestMethod]
     public void Deve_Rejeitar_Rotas_Duplicadas() {
-        Assert.ThrowsExactly<ArgumentException>(() => new EntityRegistry([
+        Assert.ThrowsExactly<CrudConfigurationException>(() => new EntityRegistry([
             CreateDefinition("usuarios"),
             CreateDefinition("USUARIOS")
+        ]));
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Tipo_Duplicado() {
+        Assert.ThrowsExactly<CrudConfigurationException>(() => new EntityRegistry([
+            CreateDefinition("usuarios"),
+            CreateDefinition("clientes")
+        ]));
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Rota_Vazia() {
+        Assert.ThrowsExactly<CrudConfigurationException>(() => new EntityRegistry([
+            CreateDefinition(" ")
         ]));
     }
 

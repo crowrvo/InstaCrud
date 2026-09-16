@@ -253,8 +253,8 @@ SQL Server e Oracle são os bancos prioritários. Outros bancos deverão receber
 ### Progresso
 
 ```text
-MVP funcional  [████████████████░░░░] 78%
-Produto final  [███████████░░░░░░░░░] 55%
+MVP funcional  [████████████████░░░░] 81%
+Produto final  [███████████░░░░░░░░░] 57%
 ```
 
 Estimativa atualizada em 15 de setembro de 2026. O primeiro percentual considera o MVP de persistência. O segundo inclui a geração ASP.NET Core/OpenAPI e a preparação para distribuição. EF Core, Kria e providers futuros não bloqueiam a primeira versão completa baseada em Dapper.
@@ -262,23 +262,22 @@ Estimativa atualizada em 15 de setembro de 2026. O primeiro percentual considera
 | Área | Peso | Entregue | Situação |
 | --- | ---: | ---: | --- |
 | Arquitetura e contratos | 10% | 10% | Concluído |
-| Metadados e registro | 15% | 12% | Faltam validações de borda |
+| Metadados e registro | 15% | 15% | Validações estruturais concluídas |
 | Comandos CRUD e consultas | 20% | 20% | Concluído |
 | Dialeto SQL Server | 15% | 12% | Falta validação em banco real |
 | Dialeto Oracle | 15% | 10% | Falta validar tipos e `RETURNING INTO` reais |
 | Execução Dapper | 10% | 8% | Falta endurecer ciclo de conexão e erros |
-| Testes automatizados | 10% | 3% | 48 testes unitários; integração pendente |
+| Testes automatizados | 10% | 3% | 56 testes unitários; integração pendente |
 | Documentação e exemplo | 5% | 3% | README pronto; aplicação sample pendente |
-| **Total** | **100%** | **78%** | **MVP avançado, ainda não publicável** |
+| **Total** | **100%** | **81%** | **MVP avançado, ainda não publicável** |
 
 ### O que falta para concluir o MVP
 
 1. Criar testes de integração executados contra SQL Server e Oracle.
 2. Validar insert, identidade, select, update, patch, delete, paginação e rollback nos dois bancos.
 3. Confirmar `RETURNING INTO` com o driver Oracle e os tipos CLR suportados.
-4. Endurecer validações de metadados: nomes duplicados, propriedades ilegíveis, chaves inválidas e rotas conflitantes.
-5. Definir exceções públicas e comportamento quando nenhuma ou múltiplas linhas forem afetadas.
-6. Criar uma aplicação mínima reproduzível com entidades, schema e ciclo CRUD completo.
+4. Definir o comportamento quando nenhuma ou múltiplas linhas forem afetadas.
+5. Criar uma aplicação mínima reproduzível com entidades, schema e ciclo CRUD completo.
 
 ### Critério de conclusão
 
@@ -323,7 +322,9 @@ Mudanças devem manter a solução compilável e incluir testes para comportamen
 - [ ] validar o ciclo CRUD em uma instância SQL Server;
 - [ ] validar o ciclo CRUD em uma instância Oracle;
 - [ ] criar uma aplicação de exemplo reproduzível;
-- [ ] endurecer validações e exceções públicas;
+- [x] endurecer validações de metadados e conflitos no registro;
+- [x] criar exceções públicas para configuração e entidades não registradas;
+- [ ] definir resultados e exceções para operações de persistência;
 - [ ] adicionar CI para build e testes;
 - [ ] padronizar projetos e namespaces com o nome público `InstantCrud`;
 - [ ] implementar registro por DI com `AddInstantCrud`;

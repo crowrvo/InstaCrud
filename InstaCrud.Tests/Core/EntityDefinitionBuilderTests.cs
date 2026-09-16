@@ -1,5 +1,7 @@
 using InstaCrud.Abstractions.Attributes;
 using InstaCrud.Handler;
+using InstaCrud.Exceptions;
+using IgnoreAttribute = InstaCrud.Abstractions.Attributes.IgnoreAttribute;
 
 namespace InstaCrud.Tests.Core;
 
@@ -22,6 +24,46 @@ public sealed class EntityDefinitionBuilderTests {
     }
 
     private sealed class EntidadeSemCrud;
+
+    [Crud("")]
+    private sealed class EntidadeComRotaVazia;
+
+    [Crud]
+    [Table(" ")]
+    private sealed class EntidadeComTabelaVazia;
+
+    [Crud]
+    private sealed class EntidadeComColunasDuplicadas {
+        [Column("VALOR")]
+        public int Primeiro { get; set; }
+
+        [Column("valor")]
+        public int Segundo { get; set; }
+    }
+
+    [Crud]
+    private sealed class EntidadeComChaveIgnorada {
+        [Key]
+        [IgnoreAttribute]
+        public int Id { get; set; }
+    }
+
+    [Crud]
+    private sealed class EntidadeComGeradoSomenteLeitura {
+        [Key]
+        [DatabaseGenerated]
+        public int Id { get; }
+    }
+
+    [Crud]
+    private sealed class EntidadeComPropriedadeSomenteEscrita {
+        public string Nome {
+            set { }
+        }
+    }
+
+    [Crud]
+    private abstract class EntidadeAbstrata;
 
     [TestMethod]
     public void Deve_Construir_Definicao_Com_Mapeamentos() {
@@ -54,7 +96,49 @@ public sealed class EntityDefinitionBuilderTests {
 
     [TestMethod]
     public void Deve_Rejeitar_Entidade_Sem_Crud() {
-        Assert.ThrowsExactly<InvalidOperationException>(
+        Assert.ThrowsExactly<CrudConfigurationException>(
             () => _builder.Build(typeof(EntidadeSemCrud)));
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Rota_E_Tabela_Vazias() {
+        Assert.ThrowsExactly<CrudConfigurationException>(
+            () => _builder.Build(typeof(EntidadeComRotaVazia)));
+        Assert.ThrowsExactly<CrudConfigurationException>(
+            () => _builder.Build(typeof(EntidadeComTabelaVazia)));
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Colunas_Duplicadas() {
+        var exception = Assert.ThrowsExactly<CrudConfigurationException>(
+            () => _builder.Build(typeof(EntidadeComColunasDuplicadas)));
+
+        Assert.AreEqual(typeof(EntidadeComColunasDuplicadas), exception.EntityType);
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Chave_Ignorada() {
+        var exception = Assert.ThrowsExactly<CrudConfigurationException>(
+            () => _builder.Build(typeof(EntidadeComChaveIgnorada)));
+
+        Assert.AreEqual(nameof(EntidadeComChaveIgnorada.Id), exception.PropertyName);
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Propriedade_Gerada_Sem_Setter() {
+        Assert.ThrowsExactly<CrudConfigurationException>(
+            () => _builder.Build(typeof(EntidadeComGeradoSomenteLeitura)));
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Propriedade_Persistida_Sem_Getter() {
+        Assert.ThrowsExactly<CrudConfigurationException>(
+            () => _builder.Build(typeof(EntidadeComPropriedadeSomenteEscrita)));
+    }
+
+    [TestMethod]
+    public void Deve_Rejeitar_Entidade_Abstrata() {
+        Assert.ThrowsExactly<CrudConfigurationException>(
+            () => _builder.Build(typeof(EntidadeAbstrata)));
     }
 }

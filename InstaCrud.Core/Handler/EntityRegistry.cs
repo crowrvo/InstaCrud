@@ -1,5 +1,6 @@
 using InstaCrud.Core;
 using InstaCrud.Interfaces;
+using InstaCrud.Exceptions;
 using System.Reflection;
 
 namespace InstaCrud.Handler;
@@ -12,6 +13,8 @@ public sealed class EntityRegistry : IEntityRegistry {
         ArgumentNullException.ThrowIfNull(entities);
 
         CrudEntityDefinition[] definitions = entities.ToArray();
+
+        ValidarDefinicoes(definitions);
 
         _entitiesByType = definitions.ToDictionary(x => x.EntityType);
         _entitiesByRoute = definitions.ToDictionary(
@@ -48,8 +51,7 @@ public sealed class EntityRegistry : IEntityRegistry {
 
         return _entitiesByType.TryGetValue(type, out CrudEntityDefinition? entity)
             ? entity
-            : throw new KeyNotFoundException(
-                $"A entidade '{type.Name}' não está registrada.");
+            : throw new EntityNotRegisteredException(type);
     }
 
     public CrudEntityDefinition Get(string routeName) {
@@ -57,7 +59,40 @@ public sealed class EntityRegistry : IEntityRegistry {
 
         return _entitiesByRoute.TryGetValue(routeName, out CrudEntityDefinition? entity)
             ? entity
-            : throw new KeyNotFoundException(
-                $"A rota '{routeName}' não está registrada.");
+            : throw new EntityNotRegisteredException(routeName);
+    }
+
+    private static void ValidarDefinicoes(
+        IReadOnlyCollection<CrudEntityDefinition> definitions) {
+        CrudEntityDefinition? invalidRoute = definitions.FirstOrDefault(x =>
+            string.IsNullOrWhiteSpace(x.RouteName));
+
+        if (invalidRoute is not null) {
+            throw new CrudConfigurationException(
+                $"A rota da entidade '{invalidRoute.EntityType.Name}' não pode ser vazia.",
+                invalidRoute.EntityType);
+        }
+
+        IGrouping<Type, CrudEntityDefinition>? duplicateType = definitions
+            .GroupBy(x => x.EntityType)
+            .FirstOrDefault(x => x.Count() > 1);
+
+        if (duplicateType is not null) {
+            throw new CrudConfigurationException(
+                $"A entidade '{duplicateType.Key.Name}' foi registrada mais de uma vez.",
+                duplicateType.Key);
+        }
+
+        IGrouping<string, CrudEntityDefinition>? duplicateRoute = definitions
+            .GroupBy(x => x.RouteName, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(x => x.Count() > 1);
+
+        if (duplicateRoute is not null) {
+            string entities = string.Join(
+                ", ",
+                duplicateRoute.Select(x => x.EntityType.Name));
+            throw new CrudConfigurationException(
+                $"A rota '{duplicateRoute.Key}' está associada a mais de uma entidade: {entities}.");
+        }
     }
 }
