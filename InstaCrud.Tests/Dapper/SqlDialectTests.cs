@@ -81,6 +81,43 @@ public sealed class SqlDialectTests {
         Assert.AreEqual(typeof(int), result.OutputParameters.Single().ValueType);
     }
 
+    [TestMethod]
+    public void Deve_Gerar_Select_Paginado_Sqlite() {
+        var provider = new DapperProvider(SqliteDialect.Instance);
+
+        var result = provider.Build(SelectCommand());
+
+        Assert.AreEqual(
+            "SELECT * FROM \"APP\".\"USUARIO\" WHERE \"ATIVO\" = @p0 ORDER BY \"NOME\" ASC LIMIT @p2 OFFSET @p1;",
+            result.Sql);
+    }
+
+    [TestMethod]
+    public void Deve_Gerar_Returning_Sqlite() {
+        var provider = new DapperProvider(SqliteDialect.Instance);
+        var command = new CrudCommand {
+            OperationType = CrudOperationType.Insert,
+            TableName = "USUARIO",
+            Fields = [new CrudField {
+                ColumnName = "NOME",
+                Value = "Maria"
+            }],
+            ReturningFields = [new CrudField {
+                ColumnName = "ID",
+                ParameterName = "Id",
+                ValueType = typeof(long),
+                Value = null
+            }]
+        };
+
+        var result = provider.Build(command);
+
+        Assert.AreEqual(
+            "INSERT INTO \"USUARIO\" (\"NOME\") VALUES (@p0) RETURNING \"ID\";",
+            result.Sql);
+        Assert.AreEqual(SqlCommandResultMode.ScalarResult, result.ResultMode);
+    }
+
     private static CrudCommand SelectCommand() => new() {
         OperationType = CrudOperationType.Select,
         TableName = "APP.USUARIO",
